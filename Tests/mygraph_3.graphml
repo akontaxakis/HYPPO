@@ -1,0 +1,70 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d5" for="edge" attr.name="execution_time" attr.type="long" />
+  <key id="d4" for="edge" attr.name="label" attr.type="double" />
+  <key id="d3" for="edge" attr.name="memory_usage" attr.type="double" />
+  <key id="d2" for="edge" attr.name="memory_usage" attr.type="long" />
+  <key id="d1" for="edge" attr.name="execution_time" attr.type="double" />
+  <key id="d0" for="edge" attr.name="weight" attr.type="double" />
+  <graph edgedefault="directed">
+    <node id="source" />
+    <node id="breast_cancer" />
+    <node id="X_test" />
+    <node id="X_train" />
+    <node id="split" />
+    <node id="gpu_standard_scaler" />
+    <node id="gpu_pca" />
+    <node id="elliptic_envelope" />
+    <node id="Combine" />
+    <edge source="source" target="breast_cancer">
+      <data key="d0">0.009096963500976562</data>
+      <data key="d1">0.008996963500976562</data>
+      <data key="d2">0</data>
+    </edge>
+    <edge source="breast_cancer" target="split">
+      <data key="d0">0.0009944438934326172</data>
+      <data key="d1">0.0009944438934326172</data>
+      <data key="d3">0.25</data>
+    </edge>
+    <edge source="X_test" target="Combine">
+      <data key="d4">0.3086819648742676</data>
+      <data key="d0">1e-06</data>
+      <data key="d1">0.3086819648742676</data>
+      <data key="d3">2.21484375</data>
+    </edge>
+    <edge source="X_train" target="gpu_standard_scaler">
+      <data key="d4">0.0030601024627685547</data>
+      <data key="d0">0.0030601024627685547</data>
+      <data key="d1">0.0030601024627685547</data>
+      <data key="d3">0.39453125</data>
+    </edge>
+    <edge source="split" target="X_test">
+      <data key="d0">1e-06</data>
+      <data key="d5">0</data>
+      <data key="d2">0</data>
+    </edge>
+    <edge source="split" target="X_train">
+      <data key="d0">1e-06</data>
+      <data key="d5">0</data>
+      <data key="d2">0</data>
+    </edge>
+    <edge source="gpu_standard_scaler" target="gpu_pca">
+      <data key="d4">0.006975650787353516</data>
+      <data key="d0">0.006975650787353516</data>
+      <data key="d1">0.006975650787353516</data>
+      <data key="d3">0.35546875</data>
+    </edge>
+    <edge source="gpu_pca" target="Combine">
+      <data key="d4">0.3086819648742676</data>
+      <data key="d0">1e-06</data>
+      <data key="d1">0.3086819648742676</data>
+      <data key="d3">2.21484375</data>
+    </edge>
+    <edge source="Combine" target="elliptic_envelope">
+      <data key="d4">0.3086819648742676</data>
+      <data key="d0">0.3086819648742676</data>
+      <data key="d1">0.3086819648742676</data>
+      <data key="d3">2.21484375</data>
+    </edge>
+  </graph>
+</graphml>

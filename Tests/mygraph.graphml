@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='utf-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
+  <key id="d3" for="edge" attr.name="execution_time" attr.type="long" />
+  <key id="d2" for="edge" attr.name="memory_usage" attr.type="double" />
+  <key id="d1" for="edge" attr.name="memory_usage" attr.type="long" />
+  <key id="d0" for="edge" attr.name="execution_time" attr.type="double" />
+  <graph edgedefault="directed">
+    <node id="source" />
+    <node id="breast_cancer" />
+    <node id="X_train" />
+    <node id="X_test" />
+    <node id="y_train" />
+    <node id="y_test" />
+    <node id="split" />
+    <edge source="source" target="breast_cancer">
+      <data key="d0">0.00851750373840332</data>
+      <data key="d1">0</data>
+    </edge>
+    <edge source="breast_cancer" target="split">
+      <data key="d0">0.0</data>
+      <data key="d2">0.19921875</data>
+    </edge>
+    <edge source="split" target="X_train">
+      <data key="d3">0</data>
+      <data key="d1">0</data>
+    </edge>
+    <edge source="split" target="X_test">
+      <data key="d3">0</data>
+      <data key="d1">0</data>
+    </edge>
+    <edge source="split" target="y_train">
+      <data key="d3">0</data>
+      <data key="d1">0</data>
+    </edge>
+    <edge source="split" target="y_test">
+      <data key="d3">0</data>
+      <data key="d1">0</data>
+    </edge>
+  </graph>
+</graphml>
