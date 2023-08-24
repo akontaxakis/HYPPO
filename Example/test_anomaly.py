@@ -12,8 +12,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from skit_learn_components.GPU_PCA import GPU_PCA
-from skit_learn_components.SS_GPU import GPU_StandardScaler
 
 if __name__ == '__main__':
     # Load the breast_cancer dataset and split it into training and test sets
@@ -45,8 +43,8 @@ if __name__ == '__main__':
     #           memory_usage=0)
     # Define the pipeline
     pipeline_steps = [
-        ('gpu_standard_scaler', GPU_StandardScaler()),
-        ('gpu_pca', GPU_PCA(n_components=10)),
+        ('gpu_standard_scaler', GPU__StandardScaler()),
+        ('gpu_pca', GPU__PCA(n_components=10)),
         ('elliptic_envelope', EllipticEnvelope())
     ]
 

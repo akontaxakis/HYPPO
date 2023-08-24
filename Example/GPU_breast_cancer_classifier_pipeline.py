@@ -18,7 +18,7 @@ if __name__ == '__main__':
     from sklearn.feature_selection import SelectKBest, f_classif
     from sklearn.decomposition import PCA
     from sklearn.neighbors import KNeighborsClassifier
-    from skit_learn_components.GPU_PCA import GPU_PCA
+    from skit_learn_components.GPU__PCA import GPU__PCA
     # Load the Breast Cancer Wisconsin dataset
     data = load_breast_cancer()
     X, y = data.data, data.target
@@ -31,7 +31,7 @@ if __name__ == '__main__':
         ('feature_selection', [
             SelectKBest(f_classif, k=10)
         ]),
-        ('dimensionality_reduction', [PCA(n_components=10), GPU_PCA(n_components=10)]),
+        ('dimensionality_reduction', [PCA(n_components=10), GPU__PCA(n_components=10)]),
         ('classifier', [
             LogisticRegression(max_iter=10000, solver='liblinear'),
             KNeighborsClassifier()

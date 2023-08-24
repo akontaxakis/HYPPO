@@ -24,13 +24,14 @@ __global__ void impute(float *data, float *statistics, int rows, int cols, float
 
 impute = mod.get_function("impute")
 
-class GPU_SimpleImputer(BaseEstimator, TransformerMixin):
+class GPU__SimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, missing_values=float('nan'), strategy='mean'):
         self.missing_values = missing_values
         self.strategy = strategy
         self.statistics_ = None
 
     def fit(self, X, y=None):
+        #print(type(X))
         if self.strategy == 'mean':
             self.statistics_ = np.nanmean(X, axis=0).astype(np.float32)
         elif self.strategy == 'median':
@@ -40,6 +41,7 @@ class GPU_SimpleImputer(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
+        #print(type(X))
         rows, cols = X.shape
         X_gpu = gpuarray.to_gpu(np.array(X, dtype=np.float32))
         statistics_gpu = gpuarray.to_gpu(self.statistics_)

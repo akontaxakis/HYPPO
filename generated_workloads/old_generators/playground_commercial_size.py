@@ -29,14 +29,14 @@ if __name__ == '__main__':
     uid = "test_sampling"
     uid = "sampling_50"
     uid = "sampling_200_sharing"
-    uid = "test_size_2"
+    uid = "test_size_3"
     os.chdir("C:/Users/adoko/PycharmProjects/pythonProject1")
     # uid = str(uuid.uuid1())[:8]
     # uid = "12346"
     data_size = []
     models_size = []
     size_in_bytes = get_folder_size("C:/Users/adoko/PycharmProjects/pythonProject1/artifacts");
-    size_in_bytes_models = get_folder_size("C:/Users/adoko/PycharmProjects/pythonProject1/artifacts/models");
+    size_in_bytes_models = get_folder_size("C:/Users/adoko/PycharmProjects/pythonProject1/models");
     size_in_kb = size_in_bytes / 1024
     data_size.append(size_in_kb)
     models_size.append(size_in_bytes_models/1024)
@@ -46,19 +46,28 @@ if __name__ == '__main__':
     steps_choices = [steps_with_sampling]
     X, y, artifact_graph = init_graph(dataset)
     i = 0;
-    while i < 10:
-        size_in_bytes = get_folder_size("C:/Users/adoko/PycharmProjects/pythonProject1/artifacts");
-        size_in_kb = size_in_bytes / 1024
+    while i < 2:
         steps = random.choice(steps_choices)
         number_of_steps = len(steps)
         artifact_graph, artifacts = generate_shared_graph(dataset, artifact_graph, uid, steps, 10, 'classifier', X, y,"no_sampling")
         size_in_bytes = get_folder_size("C:/Users/adoko/PycharmProjects/pythonProject1/artifacts")
+        size_in_bytes_models = get_folder_size("C:/Users/adoko/PycharmProjects/pythonProject1/models")
         i = i + 1
         size_in_kb = size_in_bytes / 1024
+        models_size.append(size_in_bytes_models / 1024)
         data_size.append(size_in_kb)
         print(f"size after starting {size_in_kb:.2f} in " +str(i))
 
     for i, size_in_bytes in enumerate(data_size):
+        size_in_kb = size_in_bytes / 1024
+        size_in_mb = size_in_kb / 1024
+        size_in_gb = size_in_mb / 1024
+        print(f"Folder {i + 1} size: {size_in_bytes} bytes")
+        print(f"Folder {i + 1} size: {size_in_kb:.2f} KB")
+        print(f"Folder {i + 1} size: {size_in_mb:.2f} MB")
+        print(f"Folder {i + 1} size: {size_in_gb:.2f} GB")
+        print()
+    for i, size_in_bytes in enumerate(models_size):
         size_in_kb = size_in_bytes / 1024
         size_in_mb = size_in_kb / 1024
         size_in_gb = size_in_mb / 1024

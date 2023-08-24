@@ -12,7 +12,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.svm import OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 
-from skit_learn_components.SS_GPU import GPU_StandardScaler
+from skit_learn_components.SS_GPU import GPU__StandardScaler
 
 if __name__ == '__main__':
     import time
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     from sklearn.preprocessing import StandardScaler, RobustScaler
     from sklearn.decomposition import PCA
     from sklearn.covariance import EllipticEnvelope
-    from skit_learn_components.GPU_PCA import GPU_PCA
+    from skit_learn_components.GPU__PCA import GPU__PCA
     # Load the breast_cancer dataset and split it into training and test sets
     data = load_breast_cancer()
     X, y = data.data, data.target
@@ -30,8 +30,8 @@ if __name__ == '__main__':
 
     # Define the pipeline
     pipeline_steps = [
-        ('standard_scaler', GPU_StandardScaler()),
-        ('pca', GPU_PCA(n_components=10)),
+        ('standard_scaler', GPU__StandardScaler()),
+        ('pca', GPU__PCA(n_components=10)),
         ('elliptic_envelope', EllipticEnvelope())
     ]
 

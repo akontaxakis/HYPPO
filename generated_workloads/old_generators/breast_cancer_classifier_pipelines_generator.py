@@ -6,24 +6,12 @@ import uuid
 import networkx as nx
 from sklearn.linear_model import Lasso, LogisticRegression
 
-from generated_workloads.steps_examples import simple_eq_steps
+from generated_workloads.pipelines_steps.steps_examples import simple_eq_steps
 from libs.Pipelines_Library import generate_pipeline, compute_pipeline_metrics, \
     fit_pipeline_with_store_or_load_artifacts
 from libs.artifact_graph_lib import plot_artifact_graph, store_or_load_artifact_graph, create_equivalent_graph
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures
-from sklearn.feature_selection import SelectKBest, f_classif, SelectPercentile, SelectFromModel
-from sklearn.decomposition import PCA, TruncatedSVD
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.impute import SimpleImputer
-
-from skit_learn_components.GPU_PCA import GPU_PCA
-from skit_learn_components.GPU_SS_PCA import GPU_PCA_StandardScaler
-from skit_learn_components.SS_GPU import GPU_StandardScaler
 
 if __name__ == '__main__':
     import os
