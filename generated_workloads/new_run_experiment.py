@@ -35,7 +35,7 @@ if __name__ == '__main__':
     import os
     os.chdir("C:/Users/adoko/PycharmProjects/pythonProject1")
     # Trails = [UR1_steps_0, UR1_steps_1,UR1_steps_2, UR2_steps_0, UR2_steps_1, UR2_steps_2]
-    n = 200
+    n = 100
     Trails = [UR1_steps_1, UR2_steps_1, UR1_steps_2, UR2_steps_2, UR1_steps_3, UR1_steps_4]
     # Trails = [UR2_steps_0, UR2_steps_1, UR2_steps_2]
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     # dataset = "commercial"
     dataset = "breast_cancer"
-    uid = "23"
+    uid = "bigBillionDS"
     X, y, raw_artifact_graph, cc = init_graph(dataset)
     X_test, X_train, y_test, y_train, cc = split_data(X, raw_artifact_graph, dataset, "no_sampling", y, cc)
 

@@ -538,8 +538,8 @@ def init_graph(dataset):
     if(dataset=="breast_cancer"):
         data = load_breast_cancer()
         X, y = data.data, data.target
-        X = np.random.rand(100000, 1000)
-        y = np.random.rand(100000)
+        X = np.random.rand(1000000, 1000)
+        y = np.random.rand(1000000)
         y = (y > 0.5).astype(int)
     else:
         data = pd.read_csv('C:/Users/adoko/Υπολογιστής/BBC.csv')
