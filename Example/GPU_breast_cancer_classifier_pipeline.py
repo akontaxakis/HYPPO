@@ -18,7 +18,7 @@ if __name__ == '__main__':
     from sklearn.feature_selection import SelectKBest, f_classif
     from sklearn.decomposition import PCA
     from sklearn.neighbors import KNeighborsClassifier
-    from skit_learn_components.GPU__PCA import GPU__PCA
+    from components.GPU__PCA import GPU__PCA
     # Load the Breast Cancer Wisconsin dataset
     data = load_breast_cancer()
     X, y = data.data, data.target

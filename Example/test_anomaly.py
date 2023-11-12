@@ -93,4 +93,4 @@ if __name__ == '__main__':
 
 
 
-    nx.write_graphml(G, "../Tests/mygraph_3.graphml")
+    nx.write_graphml(G, "../python_playground/mygraph_3.graphml")

@@ -10,8 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from skit_learn_components.GPU__PCA import GPU__PCA
-from skit_learn_components.SS_GPU import GPU__StandardScaler
+from components.GPU__PCA import GPU__PCA
+from components.SS_GPU import GPU__StandardScaler
 
 if __name__ == '__main__':
     # Load the breast_cancer dataset and split it into training and test sets

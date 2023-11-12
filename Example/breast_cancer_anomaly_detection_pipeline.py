@@ -12,7 +12,7 @@ from sklearn.ensemble import IsolationForest
 from sklearn.svm import OneClassSVM
 from sklearn.neighbors import LocalOutlierFactor
 
-from skit_learn_components.SS_GPU import GPU__StandardScaler
+from components.SS_GPU import GPU__StandardScaler
 
 if __name__ == '__main__':
     import time
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     from sklearn.preprocessing import StandardScaler, RobustScaler
     from sklearn.decomposition import PCA
     from sklearn.covariance import EllipticEnvelope
-    from skit_learn_components.GPU__PCA import GPU__PCA
+    from components.GPU__PCA import GPU__PCA
     # Load the breast_cancer dataset and split it into training and test sets
     data = load_breast_cancer()
     X, y = data.data, data.target

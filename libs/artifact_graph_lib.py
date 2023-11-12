@@ -1,22 +1,26 @@
 import heapq
 import os
 import pickle
+import random
 import time
 
 import numpy as np
 import pandas as pd
 import pycuda
 import tensorflow
+from IPython.core.display_functions import display
 from imblearn.under_sampling import RandomUnderSampler
 from matplotlib import pyplot as plt
 from memory_profiler import memory_usage
+from sklearn import clone
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 from tensorflow.python.framework.errors_impl import InvalidArgumentError
 from sklearn.pipeline import Pipeline
-
+import networkx as nx
 from libs.Pipelines_Library import extract_first_two_chars, generate_pipeline, compute_pipeline_metrics, \
-    compute_pipeline_metrics_training, compute_pipeline_metrics_evaluation
+    compute_pipeline_metrics_training, compute_pipeline_metrics_evaluation, compute_pipeline_metrics_training_ad, \
+    compute_pipeline_metrics_evaluation_ad
 
 
 def load_artifact_graph(artifact_graph, sum, uid, objective, dataset, graph_dir="graphs", mode="eq_"):
@@ -133,10 +137,63 @@ def create_equivalent_graph_2(uid, artifact_graph_2, metrics_dir='metrics'):
 
 def create_equivalent_graph(artifact_graph_2):
     artifact_graph = artifact_graph_2.copy()
-    artifact_graph = merge_EQ_nodes(artifact_graph)
+    artifact_graph = merge_EQ_nodes(artifact_graph,"with_fit")
     return artifact_graph
 
+def create_equivalent_graph_without_fit(artifact_graph_2):
+    artifact_graph = artifact_graph_2.copy()
+    artifact_graph = merge_EQ_nodes_without_fit(artifact_graph)
+    return artifact_graph
 
+import re
+def remove_prefixes(s):
+    # Find all the occurrences of the prefixes
+    matches = list(re.finditer(r'GP|TF|TR|SK|GL', s))
+
+    # If there are matches, remove them all from the string
+    if matches:
+        # Since we'll be adjusting the string and altering its length,
+        # we need to compute the position offsets while removing matches
+        offset = 0
+        for match in matches[:-1]:
+            start = match.start() - offset
+            end = match.end() - offset
+            s = s[:start] + s[end:]
+            offset += (end - start)
+    return s
+def merge_EQ_nodes_without_fit(artifact_graph):
+        nodes_to_remove = []
+        nodes = artifact_graph.nodes()
+        modified_graph = artifact_graph.copy()
+        for node in nodes:
+            # if artifact_graph.nodes[node]['type'] != "super":
+            if ("_fit_" not in node) and ("_fit" not in node) and ("GL" in node or "GP" in node or "TF" in node or "TR" in node or "SK" in node):
+                modified_node = node.replace("GP", "")
+                modified_node = modified_node.replace("TF", "")
+                modified_node = modified_node.replace("TR", "")
+                modified_node = modified_node.replace("SK", "")
+                modified_node = modified_node.replace("GL", "")
+                if not modified_graph.has_node(modified_node):
+                    modified_graph.add_node(modified_node, **artifact_graph.nodes[node])
+                s1 = modified_graph.nodes[node]['size']
+                s2 = modified_graph.nodes[modified_node]['size']
+                modified_graph = merge_nodes_3(modified_graph, modified_node, node)
+                modified_graph.nodes[modified_node]['size'] = min(s1, s2)
+
+        modified_graph_2 = modified_graph.copy()
+        nodes2 = modified_graph.nodes()
+        for node2 in nodes2:
+            #print(node2)
+            if "SK" in node2 or "TF" in node2 or "GL" in node2 or "TR" in node2 or "GP" in node2 and "_fit" in node2 or "_fit_" in node2:
+                tmp_node = remove_prefixes(node2)
+                if not modified_graph_2.has_node(tmp_node):
+                    modified_graph_2.add_node(tmp_node,  **modified_graph.nodes[node2])
+                s1 = modified_graph_2.nodes[node2]['size']
+                s2 = modified_graph_2.nodes[tmp_node]['size']
+                if tmp_node != node2:
+                    modified_graph_2 = merge_nodes_3(modified_graph_2, tmp_node, node2)
+                #modified_graph.nodes[tmp_node]['size'] = min(s1, s2)
+        return modified_graph_2
 
 def merge_EQ_nodes(artifact_graph):
     nodes_to_remove = []
@@ -144,10 +201,12 @@ def merge_EQ_nodes(artifact_graph):
     modified_graph = artifact_graph.copy()
     for node in nodes:
         #if artifact_graph.nodes[node]['type'] != "super":
-            if "GP" in node or "TF" in node or "TR" in node:
+            if "GP" in node or "TF" in node or "TR" in node or "GL" in node:
                 modified_node = node.replace("GP", "")
                 modified_node = modified_node.replace("TF", "")
+                modified_node = modified_node.replace("GL", "")
                 modified_node = modified_node.replace("TR", "")
+
                 if modified_node in nodes:
                     # Create new node with modified label (without "GPU")
                     # if modified_node in artifact_graph.nodes():
@@ -159,15 +218,10 @@ def merge_EQ_nodes(artifact_graph):
                     # artifact_graph = nx.contracted_nodes(artifact_graph, modified_node, node)
                     modified_graph = merge_nodes_3(modified_graph, modified_node, node)
                     # print("modified")
-                    # print(modified_graph.in_edges(modified_node, data=True))
-                    # print(modified_graph.out_edges(modified_node, data=True))
-
+                    print(modified_graph.in_edges(modified_node, data=True))
+                    print(modified_graph.out_edges(modified_node, data=True))
                     modified_graph.nodes[modified_node]['size'] = min(s1,s2)
     return modified_graph
-
-
-import networkx as nx
-
 
 def merge_nodes(G: object, node1: object, node2: object,nodes_to_remove) -> object:
     # Combine the neighbors of both nodes
@@ -217,18 +271,22 @@ def merge_nodes_3(G: object, node1: object, node2: object) -> object:
 
         weight = min(G[node1].get(neighbor, {}).get('weight', float('inf')),
                      G[node2].get(neighbor, {}).get('weight', float('inf')))
+        mem = min(G[node1].get(neighbor, {}).get('memory_usage', 0),
+                     G[node2].get(neighbor, {}).get('memory_usage', 0))
         list1 = G[node1].get(neighbor, {}).get('platform',[])
         list2 = G[node2].get(neighbor, {}).get('platform',[])
         combined = list(set(list1 + list2))
-
+        edge_type = G[node1].get(neighbor, {}).get('type', 'super')
         if G.has_edge(node1, neighbor):
             # Update edge if it already exists
             G[node1][neighbor]['weight'] = weight
             G[node1][neighbor]['execution_time'] = weight
             G[node1][neighbor]['platform'] = combined
+            G[node1][neighbor]['type'] = edge_type
+            G[node1][neighbor]['memory_usage'] = mem
         else:
             # Add new edge otherwise
-            G.add_edge(node1, neighbor, weight=weight, execution_time=weight, platform = combined)
+            G.add_edge(node1, neighbor,type=edge_type, weight=weight, execution_time=weight,memory_usage=mem, platform = combined)
 
     # Add edges between the neighbors and node1
     for neighbor in in_neighbors:
@@ -236,19 +294,22 @@ def merge_nodes_3(G: object, node1: object, node2: object) -> object:
 
         weight = min(G[neighbor].get(node1, {}).get('weight', float('inf')),
                      G[neighbor].get(node2, {}).get('weight', float('inf')))
-
+        mem = min(G[neighbor].get(node1, {}).get('memory_usage', 0),
+                  G[neighbor].get(node2, {}).get('memory_usage', 0))
         list1 = G[neighbor].get(node1, {}).get('platform',[])
         list2 = G[neighbor].get(node2, {}).get('platform',[])
         combined = list(set(list1 + list2))
-
+        edge_type = G[neighbor].get(node1, {}).get('type', 'super')
         if G.has_edge(neighbor, node1):
             # Update edge if it already exists
             G[neighbor][node1]['weight'] = weight
             G[neighbor][node1]['execution_time'] = weight
             G[neighbor][node1]['platform'] = combined
+            G[neighbor][node1]['type'] = edge_type
+            G[neighbor][node1]['memory_usage'] = mem
         else:
             # Add new edge otherwise
-            G.add_edge(neighbor, node1, weight=weight, execution_time=weight,platform = combined)
+            G.add_edge(neighbor, node1,type=edge_type, weight=weight, execution_time=weight,memory_usage = mem,platform = combined)
 
     # Remove node2 from the graph
     G.remove_node(node2)
@@ -529,18 +590,39 @@ def sample(X_train, y_train, rate):
     return sample_X_train, sample_y_train
 
 
-def init_graph(dataset):
+def init_graph(dataset, multi = 1.0):
     # Load the Breast Cancer Wisconsin dataset
     cc = 0
     G = nx.DiGraph()
     G.add_node("source", type="source", size= 0, cc= cc)
     start_time = time.time()
-    if(dataset=="breast_cancer"):
+    if dataset == "breast_cancer" :
         data = load_breast_cancer()
         X, y = data.data, data.target
-        X = np.random.rand(1000000, 1000)
-        y = np.random.rand(1000000)
+        X = np.random.rand(100000, 100)
+        y = np.random.rand(100000)
         y = (y > 0.5).astype(int)
+    elif dataset == "HIGGS":
+        number_of_rows =int(multi*20000)
+        data = np.loadtxt('C:/Users/adoko/Downloads/HIGGS.csv', delimiter=',', max_rows=number_of_rows)
+        # Extract and modify the first column based on your condition
+        # (e.g., setting it to 0 or 1 if it's greater than 0.5)
+        y = np.where(data[:, 0] > 0.5, 1, 0).astype(float)
+
+        # Store the original first column in a separate array
+        y = data[:, 0].copy()
+
+        # Drop the first column from the data
+        X = data[:, 1:]
+        print(data.shape)
+        print(data.shape)
+    elif dataset == "TAXI":
+        number_of_rows =int(multi*20000)
+        data = pd.read_csv('C:/Users/adoko/PycharmProjects/pythonProject1/datasets/taxi_train.csv',nrows=number_of_rows)
+        data['trip_duration'] = data['trip_duration'].replace(-1, 0)
+        y = data['trip_duration'].values
+        X = data.drop('trip_duration', axis=1).values
+        test = pd.read_csv('C:/Users/adoko/PycharmProjects/pythonProject1/datasets/taxi_test.csv')
     else:
         data = pd.read_csv('C:/Users/adoko/Υπολογιστής/BBC.csv')
         data['target'] = data['target'].replace(-1, 0)
@@ -556,25 +638,20 @@ def init_graph(dataset):
     platforms.append("python")
     G.add_edge("source", dataset,type="load", weight=end_time - start_time + 0.000001, execution_time=end_time - start_time,
                memory_usage=0, platform = platforms)
-    return X, y, G,cc
-
-
-
-
+    return X, y, G, cc
 
 def execute_pipeline(dataset, artifact_graph, uid, steps,mode,cc,X_train, y_train,X_test, y_test ):
     #artifact_graph, shared_graph_path = extract_artifact_graph(artifact_graph, uid)
     sum = 0
     artifacts = []
-    pipeline = generate_pipeline(steps, len(steps))
+    pipeline = steps
+    ##pipeline = generate_pipeline(steps, len(steps))
     print(pipeline)
     try:
-        #pipeline.fit(X_train, y_train)
-       # score = pipeline.score(X_test, y_test)
-        #empty_pipeline = Pipeline(pipeline.steps)
+        new_pipeline = clone(pipeline)
         cc1 = cc
-        artifact_graph, artifacts, pipeline = compute_pipeline_metrics_training(artifact_graph, pipeline, uid, X_train, y_train, artifacts, mode,cc1)
-        artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation(artifact_graph, pipeline, uid, X_test, y_test, artifacts)
+        artifact_graph, artifacts, new_pipeline = compute_pipeline_metrics_training(artifact_graph, new_pipeline, uid, X_train, y_train, artifacts, mode,cc1)
+        artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation(artifact_graph, new_pipeline, uid, X_test, y_test, artifacts)
 
         sum = sum + 1
         #except TypeError:
@@ -598,6 +675,22 @@ def execute_pipeline(dataset, artifact_graph, uid, steps,mode,cc,X_train, y_trai
 
     return artifact_graph, artifacts,request
 
+
+
+def execute_pipeline_ad(dataset, artifact_graph, uid, steps,mode,cc,X_train, y_train,X_test, y_test ):
+    #artifact_graph, shared_graph_path = extract_artifact_graph(artifact_graph, uid)
+    sum = 0
+    artifacts = []
+    pipeline = steps
+    ##pipeline = generate_pipeline(steps, len(steps))
+    print(pipeline)
+
+    new_pipeline = clone(pipeline)
+    cc1 = cc
+    artifact_graph, artifacts, new_pipeline, selected_models = compute_pipeline_metrics_training_ad(artifact_graph, new_pipeline, uid, X_train, y_train, artifacts, mode,cc1)
+    artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation_ad(artifact_graph, new_pipeline, uid, X_test, y_test, artifacts)
+
+    return artifact_graph, artifacts, request
 
 def split_data(X, artifact_graph, dataset, mode, y, cc):
     platforms = []
@@ -650,10 +743,11 @@ def extract_artifact_graph(artifact_graph, graph_dir, uid):
 
 
 def rank_based_materializer(artifact_graph,Budget):
-    materialized_artifacts = []
     pq = []
     materialized_artifacts = []
     size_sofar = 0
+    if Budget == 0:
+        return materialized_artifacts
     for node_id, attrs in artifact_graph.nodes(data=True):
         if attrs['type'] not in ["super", "raw", "split", 'source']:
             priority = -1 * attrs['cc'] / attrs['size']
@@ -681,25 +775,34 @@ def new_edges(artifact_graph_0, artifact_graph_1):
             if artifact_graph_0.has_node(node):
                 final_set.append(node)
     # Find the difference
-    return final_set, extra_cost
+    if len(final_set) == 0:
+        nodes_without_outgoing_edges = [node for node, outdegree in artifact_graph_1.out_degree() if outdegree == 0]
+        for node in nodes_without_outgoing_edges:
+            if artifact_graph_0.has_node(node):
+                final_set.append(node)
+    return final_set, extra_cost,diff
 
-def map_node(node):
-    modified_node = node
-    if "GP" in node or "TF" in node or "TR" in node:
+def map_node(node, mode):
+    if mode == "no_fit" and (("_fit_" in node) or ("_fit" in node)):
+        modified_node = node
+        modified_node = remove_prefixes(modified_node)
+    else:
         modified_node = node.replace("GP", "")
         modified_node = modified_node.replace("TF", "")
+        modified_node = modified_node.replace("GL", "")
         modified_node = modified_node.replace("TR", "")
+        modified_node = modified_node.replace("SK", "")
     return modified_node
 
-def new_eq_edges(execution_graph, equivalent_graph):
+def new_eq_edges(execution_graph, equivalent_graph,mode):
     # Get the edges from both graphs
     new_tasks = []
     additional_cost =0
     produced_artifacts = []
     eq_edges = equivalent_graph.edges
     for u, v in execution_graph.edges():
-        u_m = map_node(u)
-        v_m = map_node(v)
+        u_m = map_node(u, mode)
+        v_m = map_node(v, mode)
         if (u_m, v_m) in equivalent_graph.edges():
             ex_platform = execution_graph[u][v]['platform']
             eq_platforms = equivalent_graph[u_m][v_m]['platform']
@@ -716,11 +819,16 @@ def new_eq_edges(execution_graph, equivalent_graph):
     final_set = []
     for node in source_nodes:
         if execution_graph.nodes[node]['type'] != 'super':
-            if equivalent_graph.has_node(map_node(node)):
+            if equivalent_graph.has_node(map_node(node, mode)):
                 if node not in produced_artifacts:
                     final_set.append(node)
+    if len(final_set) == 0:
+        nodes_without_outgoing_edges = [node for node, outdegree in execution_graph.out_degree() if outdegree == 0]
+        for node in nodes_without_outgoing_edges:
+            if equivalent_graph.has_node(map_node(node, mode)):
+                final_set.append(node)
     # Find the difference
-    return final_set, additional_cost
+    return final_set, additional_cost, new_tasks
 
 
 def required_artifact(new_tasks):
@@ -738,3 +846,368 @@ def extract_nodes_and_edges(artifact_graph, uid,type, iteration,graph_dir='graph
         with open(shared_graph_path+'/edges.txt', 'w') as f:
             for node in artifact_graph.edges(data=True):
                 f.write(str(node) + "\n")
+
+
+
+def pretty_graph_drawing(G):
+    graph_size = 5
+    pos = nx.spring_layout(G)
+    pos_1 = nx.spring_layout(G)
+    depth =G.number_of_nodes();
+    for node in G.nodes:
+        G.nodes[node]['depth'] = None
+
+    # Compute and set depth for each node
+    compute_depth(G, 'source')
+
+    for node_id in G.nodes:
+        if node_id == 'source':
+            #pos[node_id] = np.array([0, depth - G.nodes[node_id]['depth']])
+            pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), 0])
+            G.nodes[node_id]['color'] = 'red'
+            G.nodes[node_id]['size'] = 100
+
+        elif G.nodes[node_id]['type'] == 'split':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'blue'
+            G.nodes[node_id]['size'] = 10
+
+        elif  G.nodes[node_id]['type'] == 'super':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'blue'
+            G.nodes[node_id]['size'] = 10
+
+
+        elif  G.nodes[node_id]['type'] == 'fitted_operator':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'green'
+            G.nodes[node_id]['size'] = 100
+
+        else:
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'purple'
+            G.nodes[node_id]['size'] = 100
+
+
+    node_sizes = [G.nodes[n]['size'] for n in G.nodes()]
+    node_colors = [G.nodes[n]['color'] for n in G.nodes()]
+    print(pos)
+    nx.draw(G, pos=pos, with_labels=True, font_size=2,node_shape="r", node_size=node_sizes, node_color=node_colors)
+    plt.figure(figsize=(100, 100))
+
+    plt.savefig("output.pdf", format="pdf")
+    plt.show()
+
+## graphviz styles can be found here: https://graphviz.org/docs/attr-types/style/
+def graphviz_draw_with_requests_and_new_tasks(K, mode,requested_nodes, new_tasks):
+    G = K.copy()
+
+    for node in G.nodes:
+        G.nodes[node]['depth'] = None
+
+    # Compute and set depth for each node
+    compute_depth(G, 'source')
+    blue_nodes = []
+    if mode == "eq":
+        eq_requested_nodes = []
+        for node in requested_nodes:
+            eq_requested_nodes.append(map_node(node,"no_fit"))
+        requested_nodes = eq_requested_nodes
+
+    disconnected_nodes, disconnected_edges = find_disconnected_nodes_edges(G, requested_nodes)
+    for node_id in G.nodes:
+        if node_id == 'source':
+            #pos[node_id] = np.array([0, depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), 0])
+            G.nodes[node_id]['color'] = 'red'
+            G.nodes[node_id]['size'] = 100
+            G.nodes[node_id]['shape'] = 'rectangle'
+
+        elif  G.nodes[node_id]['type'] == 'super' or G.nodes[node_id]['type'] == 'split':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'blue'
+            G.nodes[node_id]['edgecolors'] = 'blue'
+            G.nodes[node_id]['shape'] = 'point'
+            G.nodes[node_id]['width'] = 0.1
+            blue_nodes.append(node_id)
+
+        elif  G.nodes[node_id]['type'] == 'fitted_operator':
+                #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+                #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+                G.nodes[node_id]['color'] = 'green'
+                G.nodes[node_id]['size'] = 100
+                G.nodes[node_id]['shape'] = 'rectangle'
+
+        else:
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'purple'
+            G.nodes[node_id]['size'] = 100
+            G.nodes[node_id]['shape'] = 'rectangle'
+        if node_id in requested_nodes:
+            G.nodes[node_id]['color'] = 'black'
+            G.nodes[node_id]['shape'] = 'ellipse'
+        if node_id in disconnected_nodes:
+            G.nodes[node_id]['style'] ="dotted"
+        else:
+            G.nodes[node_id]['style'] = "bold"
+
+    labels = {node: "" if node in blue_nodes else str(node) for node in G.nodes()}
+    for node, label in labels.items():
+        G.nodes[node]['label'] = label
+
+
+
+    A = nx.nx_agraph.to_agraph(G)
+    A.graph_attr['rankdir'] = 'LR'
+    for edge in A.edges():
+        edge.attr['label'] = int(G[edge[0]][edge[1]]['weight']*10000)
+        if edge in disconnected_edges:
+            edge.attr['style'] = "dotted"
+        else:
+            edge.attr['style'] = "bold"
+
+    for u, v in new_tasks:
+        if mode == "eq":
+            A.add_edge(map_node(u, "no_fit"), map_node(v, "no_fit"))
+        else:
+            A.add_edge(u, v)
+
+    # Legend
+    # legend_label = "{ LEGEND | {Dotted Lines and Nodes |Pruned Elements} | {Black Ellipse|New Artifacts} | {Bold Black Ellipse|Requested Artifacts}}"
+    #  A.add_node("Legend", shape="record", label=legend_label, rank='sink')
+
+    # Ensure the legend is placed at the bottom
+    # A.add_subgraph(["Legend"], rank="sink", name="cluster_legend")
+
+    # Save the graph to a file
+    file_path = "graph_output.png"
+    A.layout(prog='dot')
+    A.draw(file_path)
+
+    # Open the saved image file with the default viewer
+    if os.name == 'posix':
+        os.system(f'open {file_path}')
+    elif os.name == 'nt':  # For Windows
+        os.startfile(file_path)
+
+    #nx.draw(G, pos=pos, with_labels=True, font_size=2,node_shape="r", node_size=node_sizes, node_color=node_colors)
+    #plt.figure(figsize=(100, 100))
+
+    #plt.savefig("output.pdf", format="pdf")
+    #plt.show()
+
+def graphviz_draw_with_requests(G, mode,requested_nodes):
+
+    for node in G.nodes:
+        G.nodes[node]['depth'] = None
+
+    # Compute and set depth for each node
+    compute_depth(G, 'source')
+    blue_nodes = []
+    if mode == "eq":
+        eq_requested_nodes = []
+        for node in requested_nodes:
+            eq_requested_nodes.append(map_node(node,"no_fit"))
+        requested_nodes = eq_requested_nodes
+
+    disconnected_nodes, disconnected_edges = find_disconnected_nodes_edges(G, requested_nodes)
+    for node_id in G.nodes:
+        if node_id == 'source':
+            #pos[node_id] = np.array([0, depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), 0])
+            G.nodes[node_id]['color'] = 'red'
+            G.nodes[node_id]['size'] = 100
+            G.nodes[node_id]['shape'] = 'rectangle'
+
+        elif  G.nodes[node_id]['type'] == 'super' or G.nodes[node_id]['type'] == 'split':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'blue'
+            G.nodes[node_id]['edgecolors'] = 'blue'
+            G.nodes[node_id]['shape'] = 'point'
+            G.nodes[node_id]['width'] = 0.1
+            blue_nodes.append(node_id)
+
+        elif  G.nodes[node_id]['type'] == 'fitted_operator':
+                #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+                #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+                G.nodes[node_id]['color'] = 'green'
+                G.nodes[node_id]['size'] = 100
+                G.nodes[node_id]['shape'] = 'rectangle'
+
+        else:
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'purple'
+            G.nodes[node_id]['size'] = 100
+            G.nodes[node_id]['shape'] = 'rectangle'
+        if node_id in requested_nodes:
+            G.nodes[node_id]['color'] = 'black'
+            G.nodes[node_id]['shape'] = 'ellipse'
+        if node_id in disconnected_nodes:
+            G.nodes[node_id]['style'] ="dotted"
+        else:
+            G.nodes[node_id]['style'] = "bold"
+
+    labels = {node: "" if node in blue_nodes else str(node) for node in G.nodes()}
+    for node, label in labels.items():
+        G.nodes[node]['label'] = label
+    A = nx.nx_agraph.to_agraph(G)
+    A.graph_attr['rankdir'] = 'LR'
+    for edge in A.edges():
+        edge.attr['label'] = int(G[edge[0]][edge[1]]['weight']*10000)
+        if edge in disconnected_edges:
+            edge.attr['style'] = "dotted"
+        else:
+            edge.attr['style'] = "bold"
+    # Save the graph to a file
+    file_path = "graph_output.png"
+    A.layout(prog='dot')
+    A.draw(file_path)
+
+    # Open the saved image file with the default viewer
+    if os.name == 'posix':
+        os.system(f'open {file_path}')
+    elif os.name == 'nt':  # For Windows
+        os.startfile(file_path)
+
+    #nx.draw(G, pos=pos, with_labels=True, font_size=2,node_shape="r", node_size=node_sizes, node_color=node_colors)
+    #plt.figure(figsize=(100, 100))
+
+    #plt.savefig("output.pdf", format="pdf")
+    #plt.show()
+
+def graphviz_draw(G, mode):
+    from IPython.display import Image
+
+    # Convert the networkx graph to a pygraphviz graph
+
+
+    # Customize appearance if needed
+    # For example, you can modify node shapes, colors, edge types, etc.
+    graph_size = 5
+    pos = nx.spring_layout(G)
+    pos_1 = nx.spring_layout(G)
+    depth =G.number_of_nodes();
+    for node in G.nodes:
+        G.nodes[node]['depth'] = None
+
+    # Compute and set depth for each node
+    compute_depth(G, 'source')
+    blue_nodes = []
+    for node_id in G.nodes:
+        if node_id == 'source':
+            #pos[node_id] = np.array([0, depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), 0])
+            G.nodes[node_id]['color'] = 'red'
+            G.nodes[node_id]['size'] = 100
+            G.nodes[node_id]['shape'] = 'rectangle'
+
+        elif G.nodes[node_id]['type'] == 'split':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'blue'
+            G.nodes[node_id]['size'] = 10
+            G.nodes[node_id]['shape'] = 'rectangle'
+            G.nodes[node_id]['shape'] = 'circle'
+            G.nodes[node_id]['width'] = 0.3
+            blue_nodes.append(node_id)
+
+        elif  G.nodes[node_id]['type'] == 'super':
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'blue'
+            G.nodes[node_id]['shape'] = 'circle'
+            G.nodes[node_id]['width'] = 0.3
+            blue_nodes.append(node_id)
+
+        elif  G.nodes[node_id]['type'] == 'fitted_operator':
+                #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+                #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+                G.nodes[node_id]['color'] = 'green'
+                G.nodes[node_id]['size'] = 100
+                G.nodes[node_id]['shape'] = 'rectangle'
+
+        else:
+            #pos[node_id] = np.array([random.uniform(-2, 2), depth - G.nodes[node_id]['depth']])
+            #pos[node_id] = np.array([-(depth - G.nodes[node_id]['depth']), random.uniform(-graph_size, graph_size)])
+            G.nodes[node_id]['color'] = 'purple'
+            G.nodes[node_id]['size'] = 100
+            G.nodes[node_id]['shape'] = 'rectangle'
+
+
+
+    node_sizes = [G.nodes[n]['size'] for n in G.nodes()]
+    node_colors = [G.nodes[n]['color'] for n in G.nodes()]
+    labels = {node: "" if node in blue_nodes else str(node) for node in G.nodes()}
+    for node, label in labels.items():
+        G.nodes[node]['label'] = label
+    A = nx.nx_agraph.to_agraph(G)
+    A.graph_attr['rankdir'] = 'LR'
+    for edge in A.edges():
+        edge.attr['label'] = int(G[edge[0]][edge[1]]['weight']*10000)
+    # Save the graph to a file
+    file_path = "graph_output.png"
+    A.layout(prog='dot')
+    A.draw(file_path)
+
+    # Open the saved image file with the default viewer
+    if os.name == 'posix':
+        os.system(f'open {file_path}')
+    elif os.name == 'nt':  # For Windows
+        os.startfile(file_path)
+
+    #nx.draw(G, pos=pos, with_labels=True, font_size=2,node_shape="r", node_size=node_sizes, node_color=node_colors)
+    #plt.figure(figsize=(100, 100))
+
+    #plt.savefig("output.pdf", format="pdf")
+    #plt.show()
+
+def compute_depth(graph, node, parent=None):
+    if parent is None:
+        depth = 0
+    else:
+        depth = graph.nodes[parent]['depth'] + 1
+    graph.nodes[node]['depth'] = depth
+    for neighbor in graph.neighbors(node):
+        if neighbor != parent:
+            compute_depth(graph, neighbor, node)
+def find_disconnected_nodes_edges(G, targets):
+    connected_nodes = set()
+    for node in G.nodes():
+        for target in targets:
+            if nx.has_path(G, node, target):
+                connected_nodes.add(node)
+                break
+
+    # Step 2: Identify edges connected to these nodes
+    connected_edges = {(u, v) for u, v in G.edges() if v in connected_nodes}
+
+    # Step 3: Return nodes and edges that aren't in the above sets
+    disconnected_nodes = set(G.nodes()) - connected_nodes
+    disconnected_edges = set(G.edges()) - connected_edges
+    return disconnected_nodes, disconnected_edges
+
+
+def get_first_lines(filename, n=10):
+    """
+    Extract the first n lines of a file.
+
+    Parameters:
+    - filename: path to the file
+    - n: number of lines to extract
+
+    Returns:
+    - list of the first n lines
+    """
+
+    with open(filename, 'r', encoding="utf-8") as f:
+        lines = [next(f) for _ in range(n)]
+
+    return lines

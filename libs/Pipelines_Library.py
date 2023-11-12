@@ -2,7 +2,8 @@ import os
 import pickle
 import random
 import time
-
+import hashlib
+import re
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -359,10 +360,6 @@ def compute_pipeline_metrics_old(artifact_graph, pipeline, uid, X_train, X_test,
     return step_times, artifact_graph
 
 
-def extract_first_two_chars(s):
-    split_strings = s.split('__')
-    result = ''.join([substring[:2] for substring in split_strings])
-    return result
 
 
 def print_metrics(metrics_dir='metrics'):
@@ -430,10 +427,44 @@ def extract_platform(operator):
         return split_strings[0]
 
 
+
+def text_inside_parentheses(s):
+    # Find all substrings within parentheses
+    matches = re.findall(r'\((.*?)\)', s)
+    # Concatenate all matches into a single string, separated by a space (or any other separator you prefer)
+    return ' '.join(matches)
+
+def extract_first_two_chars(s, selected_models=[]):
+    unified_string = ''.join(selected_models)
+    sig = create_4_digit_signature(text_inside_parentheses(s) + unified_string)
+    split_strings = s.split('__')
+    result = ''.join([substring[:2] for substring in split_strings])
+    return result+sig
+
+
+def create_4_digit_signature(input_string):
+    # Create a hash of the input string
+    hash_object = hashlib.sha256(input_string.encode())
+    hex_dig = hash_object.hexdigest()
+
+    # Convert the hexadecimal hash to an integer
+    numeric_hash = int(hex_dig, 16)
+
+    # Reduce the hash to 4 digits. We use modulo 10000 to ensure the result is at most 4 digits
+    short_hash = numeric_hash % 10000
+
+    return f"{short_hash:04}"  # Return the number as a zero-padded string
+
 def compute_pipeline_metrics_training(artifact_graph, pipeline, uid, X_train, y_train, artifacts, mode,cc,
                                       scores_dir='metrics', artifact_dir='artifacts', models_dir='models',
                                       materialization=0):
     os.makedirs(scores_dir, exist_ok=True)
+    from joblib import dump
+
+    folder_name = "taxi_models_2"
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
     scores_file = uid + "_scores"
     scores_path = os.path.join(scores_dir, f"{scores_file}.txt")
 
@@ -448,8 +479,13 @@ def compute_pipeline_metrics_training(artifact_graph, pipeline, uid, X_train, y_
     for step_name, step_obj in pipeline.steps:
 
         platforms = []
-        platforms.append(extract_platform(str(step_obj)))
-        step_full_name = step_full_name + str(step_obj) + "__"
+        if "GP" in str(step_obj) or "TF" in str(step_obj) or "TR" in str(step_obj) or "GL" in str(step_obj):
+            name = str(step_obj)
+        else:
+            name = "SK__" + str(step_obj)
+
+        platforms.append(extract_platform(name))
+        step_full_name = step_full_name + name + "__"
         hs_current = extract_first_two_chars(step_full_name)
         #artifact_path = os.path.join(artifact_dir, f"{hs_current}.pkl")
         #models_path = os.path.join(models_dir, f"{hs_current}.pkl")
@@ -458,9 +494,28 @@ def compute_pipeline_metrics_training(artifact_graph, pipeline, uid, X_train, y_
                 continue
             if str(step_obj).startswith("AccuracyCalculator"):
                 continue
+            if str(step_obj).startswith("ComputeAUC"):
+                continue
+            if str(step_obj).startswith("KS"):
+                continue
+            if str(step_obj).startswith("MSECalculator"):
+                continue
+            if str(step_obj).startswith("MAECalculator"):
+                continue
+            if str(step_obj).startswith("MPECalculator"):
+                continue
             step_start_time = time.time()
+            y_temp = y_temp[:len(X_temp)]
+
             fitted_operator = step_obj.fit(X_temp, y_temp)
             step_end_time = time.time()
+            import copy
+            fitted_operator_copy = copy.deepcopy(fitted_operator)
+           # if ("Ra" in name or "De" in name or "KN" in name or "LG" in name or "Gr" in name or "Ri" in name or "Li" in name):
+           #     file_path = os.path.join(folder_name, hs_current)
+           #     with open(file_path, 'wb') as f:
+           #         pickle.dump(fitted_operator_copy, f)
+
             step_time = step_end_time - step_start_time
             cc = cc + step_time
             mem_usage =[0, 0]# memory_usage(lambda: step_obj.fit(X_temp, y_train))
@@ -493,12 +548,16 @@ def compute_pipeline_metrics_evaluation(artifact_graph, pipeline, uid, X_test, y
     for step_name, step_obj in pipeline.steps:
         platforms = []
         platforms.append(extract_platform(str(step_obj)))
-        step_full_name = step_full_name + str(step_obj) + "__"
+        if "GP" in str(step_obj) or "TF" in str(step_obj) or "TR" in str(step_obj) or "GL" in str(step_obj) in str(step_obj):
+            name = str(step_obj)
+        else:
+            name = "SK__" + str(step_obj)
+        step_full_name = step_full_name + str(name) + "__"
         hs_current = extract_first_two_chars(step_full_name)
         # artifact_path = os.path.join(artifact_dir, f"{hs_current}.pkl")
         # models_path = os.path.join(models_dir, f"{hs_current}.pkl")
         fitted_operator_name = hs_current + "_" + "fit"
-
+        #print(fitted_operator_name)
         if hasattr(step_obj, 'transform'):
             cc = artifact_graph.nodes[fitted_operator_name]['cc']
             mem_usage = [0, 0] #memory_usage(lambda: step_obj.transform(X_temp))
@@ -532,12 +591,196 @@ def compute_pipeline_metrics_evaluation(artifact_graph, pipeline, uid, X_test, y
 
             mem_usage = [0, 0] #memory_usage(lambda: step_obj.predict(X_temp ))
             hs_previous = update_graph(artifact_graph, mem_usage, step_time, "predict", fitted_operator_name + "_Psuper", hs_current,platforms)
-        if hasattr(step_obj, 'score') :
-            if str(step_obj).startswith("F1ScoreCalculator") or str(step_obj).startswith("AccuracyCalculator"):
+        if hasattr(step_obj, 'score'):
+            if str(step_obj).startswith("F1ScoreCalculator") or str(step_obj).startswith("AccuracyCalculator") or str(step_obj).startswith("MPECalculator") or str(step_obj).startswith("MSE") or str(step_obj).startswith("MAE") or str(step_obj).startswith("KS") or str(step_obj).startswith("VIZ"):
 
                 step_start_time = time.time()
-                fitted_operator = step_obj.fit(y_test)
+                y_temp = y_temp[:len(predictions)]
+                fitted_operator = step_obj.fit(y_temp)
+
                 X_temp = fitted_operator.score(predictions)
+                print(X_temp)
+                step_end_time = time.time()
+                step_time = step_end_time - step_start_time
+
+                artifact_graph.add_node(hs_current + "_score", type="score",
+                                        size=X_temp.size * X_temp.itemsize, cc=cc)
+
+                hs_previous = update_graph(artifact_graph, mem_usage, step_time, "score", hs_previous, hs_current,platforms)
+
+
+    return artifact_graph, artifacts, hs_previous
+
+
+
+def compute_pipeline_metrics_training_ad(artifact_graph, pipeline, uid, X_train, y_train, artifacts, mode,cc,
+                                      scores_dir='metrics', artifact_dir='artifacts', models_dir='models',
+                                      materialization=0):
+    os.makedirs(scores_dir, exist_ok=True)
+    from joblib import dump
+    folder_name = "taxi_models"
+    if not os.path.exists(folder_name):
+        os.makedirs(folder_name)
+
+    scores_file = uid + "_scores"
+    scores_path = os.path.join(scores_dir, f"{scores_file}.txt")
+
+    if mode == "sampling":
+        hs_previous = "2sample_X_train__"
+    else:
+        hs_previous = "X_train__"
+    X_temp = X_train.copy()
+    y_temp = y_train.copy()
+    step_full_name = hs_previous
+    fitted_operator_name= ""
+    for step_name, step_obj in pipeline.steps:
+
+        platforms = []
+        if "GP" in str(step_obj) or "TF" in str(step_obj) or "TR" in str(step_obj) or "GL" in str(step_obj):
+            name = str(step_obj)
+        else:
+            name = "SK__" + str(step_obj)
+
+        platforms.append(extract_platform(name))
+        step_full_name = step_full_name + name + "__"
+        hs_current = extract_first_two_chars(step_full_name)
+        #artifact_path = os.path.join(artifact_dir, f"{hs_current}.pkl")
+        #models_path = os.path.join(models_dir, f"{hs_current}.pkl")
+        if hasattr(step_obj, 'fit'):
+            if str(step_obj).startswith("F1ScoreCalculator"):
+                continue
+            if str(step_obj).startswith("AccuracyCalculator"):
+                continue
+            if str(step_obj).startswith("ComputeAUC"):
+                continue
+            if str(step_obj).startswith("KS"):
+                continue
+            if str(step_obj).startswith("MSECalculator"):
+                continue
+            if str(step_obj).startswith("MAECalculator"):
+                continue
+            if str(step_obj).startswith("MPECalculator"):
+                continue
+            step_start_time = time.time()
+            y_temp = y_temp[:len(X_temp)]
+
+            fitted_operator = step_obj.fit(X_temp, y_temp)
+            step_end_time = time.time()
+            import copy
+            fitted_operator_copy = copy.deepcopy(fitted_operator)
+            if ("Ra" in name or "De" in name or "KN" in name or "LG" in name or "Gr" in name or "Ri" in name or "Li" in name):
+                file_path = os.path.join(folder_name, hs_current)
+                with open(file_path, 'wb') as f:
+                    pickle.dump(fitted_operator_copy, f)
+
+            step_time = step_end_time - step_start_time
+            cc = cc + step_time
+            if hasattr(step_obj, 'get_selected_models'):
+                selected_models = step_obj.get_selected_models()
+                print(selected_models)
+                hs_current = extract_first_two_chars(step_full_name, selected_models)
+                mem_usage = [0, 0]  # memory_usage(lambda: step_obj.fit(X_temp, y_train))
+                artifact_graph.add_node(hs_current + "_fit", type="fitted_operator",size=asizeof.asizeof(fitted_operator), cc=cc)
+                artifact_graph.add_node(hs_current + "_Fsuper", type="super", size=0, cc=0)
+                artifact_graph.add_edge(hs_current + "_Fsuper", hs_current + "_fit", type="super", weight=step_time,
+                                        execution_time=step_time, memory_usage=max(mem_usage), platform=platforms)
+
+                artifact_graph.add_edge(hs_previous, hs_current + "_Fsuper", type="super",
+                                        weight=0,
+                                        execution_time=0, memory_usage=0, platform=platforms)
+                for model in selected_models:
+                    artifact_graph.add_node(model + "_fit", type="fitted_operator",
+                                            size=asizeof.asizeof(fitted_operator), cc=cc)
+
+                    artifact_graph.add_edge(model + "_fit", hs_current + "_Fsuper", type="super",
+                                            weight=0,
+                                            execution_time=0, memory_usage=0, platform=platforms)
+            else:
+                mem_usage =[0, 0]# memory_usage(lambda: step_obj.fit(X_temp, y_train))
+                artifact_graph.add_node(hs_current+"_fit", type="fitted_operator", size=asizeof.asizeof(fitted_operator),cc=cc)
+                fitted_operator_name=update_graph(artifact_graph,mem_usage,step_time,"fit",hs_previous,hs_current,platforms)
+
+
+        if hasattr(step_obj, 'transform'):
+            mem_usage = [0, 0]# memory_usage(lambda: step_obj.transform(X_temp))
+            step_start_time = time.time()
+            X_temp = step_obj.transform(X_temp)
+            step_end_time = time.time()
+            step_time = step_end_time - step_start_time
+            cc = cc +step_time
+            #tmp = X_temp.__sizeof__()
+            #### ADDING SUPER EDGE FOR TRANFORM
+            artifact_graph.add_node(fitted_operator_name+"_super", type="super", size=0, cc=0)
+            artifact_graph.add_node(hs_current + "_ftranform", type="train", size=X_temp.size * X_temp.itemsize, cc=cc)
+            artifact_graph.add_edge(fitted_operator_name, fitted_operator_name+"_super", type="super", weight=0, execution_time=0, memory_usage=0,platform = platforms)
+            artifact_graph.add_edge(hs_previous, fitted_operator_name + "_super", type="super", weight=0, execution_time=0, memory_usage=0,platform = platforms)
+            hs_previous = update_graph(artifact_graph, mem_usage, step_time, "ftranform", fitted_operator_name+"_super", hs_current, platforms)
+
+    return artifact_graph, artifacts, pipeline, selected_models
+
+def compute_pipeline_metrics_evaluation_ad(artifact_graph, pipeline, uid, X_test, y_test, artifacts):
+    X_temp = X_test.copy()
+    y_temp = y_test.copy()
+    hs_previous = "X_test__"
+    step_full_name = hs_previous
+    fitted_operator_name = ""
+    for step_name, step_obj in pipeline.steps:
+        platforms = []
+        platforms.append(extract_platform(str(step_obj)))
+        if "GP" in str(step_obj) or "TF" in str(step_obj) or "TR" in str(step_obj) or "GL" in str(step_obj) in str(step_obj):
+            name = str(step_obj)
+        else:
+            name = "SK__" + str(step_obj)
+        step_full_name = step_full_name + str(name) + "__"
+
+        hs_current = extract_first_two_chars(step_full_name)
+        if hasattr(step_obj, 'get_selected_models'):
+            selected_models = step_obj.get_selected_models()
+            hs_current = extract_first_two_chars(step_full_name, selected_models)
+        # artifact_path = os.path.join(artifact_dir, f"{hs_current}.pkl")
+        # models_path = os.path.join(models_dir, f"{hs_current}.pkl")
+        fitted_operator_name = hs_current + "_" + "fit"
+        #print(fitted_operator_name)
+        if hasattr(step_obj, 'transform'):
+            cc = artifact_graph.nodes[fitted_operator_name]['cc']
+            mem_usage = [0, 0] #memory_usage(lambda: step_obj.transform(X_temp))
+            step_start_time = time.time()
+            X_temp = step_obj.transform(X_temp)
+            step_end_time = time.time()
+            step_time = step_end_time - step_start_time
+
+            artifact_graph.add_node(hs_current + "_tetranform", type="test", size=X_temp.size * X_temp.itemsize,cc = cc + step_time)
+            artifact_graph.add_node(fitted_operator_name + "_Tsuper", type="super", size=0, cc = 0)
+
+            artifact_graph.add_edge(fitted_operator_name, fitted_operator_name + "_Tsuper",type="super", weight=0, execution_time=0,memory_usage=0,platform = platforms)
+            artifact_graph.add_edge(hs_previous, fitted_operator_name + "_Tsuper",type="super", weight=0, execution_time=0,memory_usage=0,platform = platforms)
+            hs_previous = update_graph(artifact_graph, mem_usage, step_time, "tetranform", fitted_operator_name + "_Tsuper", hs_current,platforms)
+
+        if hasattr(step_obj, 'predict'):
+            cc = artifact_graph.nodes[fitted_operator_name]['cc']
+            step_start_time = time.time()
+            predictions = step_obj.predict(X_temp)
+            step_end_time = time.time()
+            step_time = step_end_time - step_start_time
+
+            artifact_graph.add_node(hs_current + "_predict", type="test", size=predictions.size * predictions.itemsize,cc=cc + step_time)
+
+            artifact_graph.add_node(fitted_operator_name + "_Psuper", type="super", size=0, cc=0)
+
+            artifact_graph.add_edge(fitted_operator_name, fitted_operator_name + "_Psuper", type="super", weight=0,
+                                    execution_time=0, memory_usage=0,platform = platforms)
+            artifact_graph.add_edge(hs_previous, fitted_operator_name + "_Psuper", type="super", weight=0,
+                                    execution_time=0, memory_usage=0,platform = platforms)
+
+            mem_usage = [0, 0] #memory_usage(lambda: step_obj.predict(X_temp ))
+            hs_previous = update_graph(artifact_graph, mem_usage, step_time, "predict", fitted_operator_name + "_Psuper", hs_current,platforms)
+        if hasattr(step_obj, 'score'):
+            if str(step_obj).startswith("F1ScoreCalculator") or str(step_obj).startswith("AccuracyCalculator") or str(step_obj).startswith("MPECalculator") or str(step_obj).startswith("MSE") or str(step_obj).startswith("MAE") or str(step_obj).startswith("KS") or str(step_obj).startswith("VIZ"):
+
+                step_start_time = time.time()
+                fitted_operator = step_obj.fit(y_temp)
+                X_temp = fitted_operator.score(predictions)
+                print(X_temp)
                 step_end_time = time.time()
                 step_time = step_end_time - step_start_time
 

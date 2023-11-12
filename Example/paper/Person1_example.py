@@ -9,7 +9,7 @@ from memory_profiler import memory_usage
 from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
-from generated_workloads.steps_examples import simple_eq_steps, simple_eq_steps_1, ad_eq_steps, simple_eq_steps_bigger, \
+from generator.steps_examples import simple_eq_steps, simple_eq_steps_1, ad_eq_steps, simple_eq_steps_bigger, \
     person_1_steps, person_2_steps, person_2_steps_2
 from libs.Pipelines_Library import generate_pipeline, compute_pipeline_metrics
 from libs.artifact_graph_lib import plot_artifact_graph, add_load_tasks_to_the_graph, create_equivalent_graph, \
