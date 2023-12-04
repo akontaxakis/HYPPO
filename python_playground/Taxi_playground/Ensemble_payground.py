@@ -6,9 +6,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-from components.Outlier_removal.Taxi_DateTimeFeatures import CustomFeatureEngineer
-from components.Outlier_removal.Taxi_OneHot import CustomOneHotEncoder
-from components.Outlier_removal.Taxi_Outlier_Removal import Taxi_Outlier_Removal
+from Dictionary.Outlier_removal.Taxi_DateTimeFeatures import CustomFeatureEngineer
+from Dictionary.Outlier_removal.Taxi_OneHot import CustomOneHotEncoder
+from Dictionary.Outlier_removal.Taxi_Outlier_Removal import Taxi_Outlier_Removal
 
 if __name__ == '__main__':
     import os

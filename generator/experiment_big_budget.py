@@ -1,11 +1,15 @@
-from Example.user_iterations import UR1_steps_0, UR1_steps_1, UR1_steps_2, UR2_steps_0, UR2_steps_1, UR2_steps_2, \
-    UR1_steps_3, UR1_steps_4, all_steps
 
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
+
+from parser import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
     store_EDGES_artifact_graph, execute_pipeline, rank_based_materializer, new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph
 from itertools import product
 import random
+
+from python_playground.Example.user_iterations import UR1_steps_3, UR1_steps_4, UR1_steps_1, UR2_steps_1, UR1_steps_2, \
+    UR2_steps_2, all_steps
+
+
 def store_diff(required_nodes, extra_cost, request, uid):
     os.makedirs('iterations_diff', exist_ok=True)
     with open('iterations_diff/' + uid + '_iterations_diff_' + str(iteration) + '.txt', 'w') as f:

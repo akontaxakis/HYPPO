@@ -1,23 +1,16 @@
+import copy
 import pickle
 import random
 from itertools import product
 
-import joblib
 import networkx as nx
-import pandas as pd
-from imblearn.pipeline import Pipeline
-from sklearn.ensemble import VotingRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 
 from Example.user_iterations import collab_HIGGS_all_operators, collab_TAXI_all_operators
-from Dictionary.Outlier_removal.Taxi_DateTimeFeatures import CustomFeatureEngineer
-from Dictionary.Outlier_removal.Taxi_OneHot import CustomOneHotEncoder
-from Dictionary.Outlier_removal.Taxi_Outlier_Removal import Taxi_Outlier_Removal
 from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
     new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
-    graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks
+    graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks, update_and_merge_graphs, \
+    execute_pipeline_helix
 from libs.logical_pipeline_generator import logical_to_physical_random
 
 
@@ -48,103 +41,74 @@ if __name__ == '__main__':
     import os
     os.chdir("C:/Users/adoko/PycharmProjects/pythonProject1")
     dataset = "TAXI"
-    uid = "TAXI_ad_10_200_f6"
-    iteration = 50
-    k = 200
-    N = 10
-
-
-
-    categorical_features = ['store_and_fwd_flag', 'vendor_id']
-    preprocessing_pipeline = Pipeline([
-        ('OR', Taxi_Outlier_Removal()),
-        ('OH', CustomOneHotEncoder(categorical_features)),
-        ('FE', CustomFeatureEngineer()),
-    ])
-    pickle_path = f"{uid}_{iteration}_advance.gpickle"
-    with open(pickle_path, 'rb') as file:
-        shared_graph = pickle.load(file)
-
-    # List of model file paths
-    model_paths = [
-        'taxi_models_f/X_SKCuSKCuSKGr2907',
-        'taxi_models_f/X_SKCuSKCuSKKN0663',
-        'taxi_models_f/X_SKCuSKCuSKRa2907',
-        'taxi_models_f/X_SKTaSKCuSKCuSKStSKKN3874'
-    ]
-
-    # Define the number of models you want to select
-    N = 2  # Replace with the number of models you want to select
-
-
-    # Randomly select N paths
-    selected_paths = random.sample(model_paths, N)
-
-    # Load the selected models and store them in a list along with their names
-    selected_models_with_names = [(path.split('/')[-1], joblib.load(path)) for path in selected_paths]
-
-    # Now selected_models_with_names contains tuples of (model_name, model_object)
-    for name, model in selected_models_with_names:
-        print(f"Model Name: {name}, Model Object: {model}")
-
-
-    X, y, raw_artifact_graph, cc = init_graph(dataset)
-    X_test, X_train, y_test, y_train, cc = split_data(X, raw_artifact_graph, dataset, "no_sampling", y, cc)
-    dataset_size = raw_artifact_graph.nodes[dataset]['size']
-
-    preprocessed_data = preprocessing_pipeline.fit_transform(X_train)
-    preprocessed_test = preprocessing_pipeline.transform(X_test)
-
-    y_train_aligned = y_train[:len(preprocessed_data)]
-
-    votingC = VotingRegressor(estimators=[selected_models_with_names],
-                               n_jobs=4)
-
-    votingC = votingC.fit(preprocessed_data, y_train_aligned)
-    predictions = votingC.predict(preprocessed_test)
-
-
     #dataset = "breast_cancer"
-    #uid = "TAXI_10_200_f5"
+    uid = "TAXI_graph_100_ad"
+    uid = "TAXI_10_200_x10"
+    uid = "TAXI_f_graph_100_ad"
+    uid = "TAXI_FULL_1"
+    uid = "TAXI_FULL_01"
+    k = 50
+    N = 3
 
     operators_dict = {key: value for key, value in collab_TAXI_all_operators}
     #logical_pipelines_pool = "OR|OH|FE|;SS|RF();GBR();LGBM()|MSE"
-
-    logical_pipelines_pool = ";OR|OH|FE|;SS|RF;LGBM;GBR;KNR;DTR|MSE;MAE"
-    logical_pipelines_pool = "OR|OH|FE|SS|IM|RI;LGBM;GBR;KNR;LR|MSE;MAE;MPE"
-    logical_pipelines_pool = "OR|OH|FE|SS|IM|RI;MS(2);MS(3);MS(4);MS(5)|VC;SM|MSE;MAE;MPE"
-
-
-    dataset_size = shared_graph.nodes[dataset]['size']
+    #logical_pipelines_pool = "SI|SS|;PF|SVM(1);SVM(0.5)|AC;F1;CA;KS"
+    #logical_pipelines_pool = "OR|OH|FE|SS|IM|RI;LR|MSE;MAE;MPE"
+    logical_pipelines_pool = "OR|OH|FE|SS|SI|RI;LR;LA;LGBM|MSE;MAE;MPE"
+    operators_dict = {key: value for key, value in collab_TAXI_all_operators}
+    X, y, raw_artifact_graph, cc = init_graph(dataset,0.1)
+    X_test, X_train, y_test, y_train, cc = split_data(X, raw_artifact_graph, dataset, "no_sampling", y, cc)
+    dataset_size = raw_artifact_graph.nodes[dataset]['size']
+    dataset_size = dataset_size/10
     print(dataset_size)
+    # Budget = [0, dataset_size / 1000, dataset_size / 500, dataset_size / 200, dataset_size / 100, dataset_size / 50, dataset_size / 20, dataset_size / 10, dataset_size / 2, dataset_size, dataset_size*2,dataset_size * 5, dataset_size * 10, dataset_size * 100]
 
-    Budget = [0,dataset_size / 100000, dataset_size / 10000, dataset_size / 1000, dataset_size / 100, dataset_size, dataset_size * 10, dataset_size * 100]
+    # Budget = [0, dataset_size/1000000, dataset_size/100000, dataset_size/10000, dataset_size/1000, dataset_size/100, dataset_size/10, dataset_size, dataset_size*10, dataset_size*100]
+    # Budget = [0, dataset_size / 10, dataset_size, dataset_size * 10]
+    # loading_speed = 5602400
+    # Budget = [ dataset_size/1000]
+    previous_materiliazed_set_collab = []
+    previous_materialized_set_helix = []
+    previous_materialized_set_eq = []
+    Budget = [0, dataset_size / 1000, dataset_size / 500, dataset_size / 200, dataset_size / 100, dataset_size / 50,dataset_size / 20, dataset_size / 10, dataset_size / 2, dataset_size, dataset_size * 2, dataset_size * 5,dataset_size * 10, dataset_size * 100]
+    Budget_h = dataset_size / 10
+    #Budget = [0, dataset_size/2000, dataset_size/200, dataset_size/20, dataset_size/2]
     loading_speed = 566255240
     for i in range(N):
 
         Trails = logical_to_physical_random(logical_pipelines_pool,operators_dict, k)
         print(Trails)
-        sh_previous_graph = shared_graph
+        sh_previous_graph = copy.deepcopy(raw_artifact_graph)
+        previous_materialized_set_helix = []
         budget_it = 0
         iteration = 0
         for trial in Trails:
             #######################--SHARED GRAPH--#########################
-            execution_graph, artifacts, request = execute_pipeline(dataset, raw_artifact_graph.copy(), uid, trial,
-                                                                   "no_sampling", cc, X_train, y_train, X_test, y_test)
-            shared_artifact_graph = nx.compose(execution_graph, sh_previous_graph)
+            execution_graph, artifacts, request,materialized_artifacts_helix = execute_pipeline_helix(dataset, copy.deepcopy(raw_artifact_graph), uid, trial,
+                                                                   "no_sampling", cc, X_train, y_train, X_test, y_test,Budget_h)
+            ##shared_artifact_graph = nx.compose(execution_graph, sh_previous_graph)
+            shared_artifact_graph = update_and_merge_graphs( copy.deepcopy(sh_previous_graph), execution_graph)
             extract_nodes_and_edges(shared_artifact_graph, uid+ "_" + str(i), "shared", iteration)
 
             ####################--Update Graphs for next iteration--#########
+            ######################--HELIX GRAPH--#########################
+            #limited_required_nodes, extra_cost_1, new_tasks = new_edges(sh_previous_graph, execution_graph)
+            #store_diff(limited_required_nodes, extra_cost_1, request, uid + "_" + str(budget_it) + "_" + str(i))
+            #limited_shared_graph = add_load_tasks_to_the_graph(sh_previous_graph, previous_materialized_set_helix,
+            #                                                   loading_speed)
+            #extract_nodes_and_edges(limited_shared_graph, uid + "_" + str(budget_it) + "_" + str(i), "helix", iteration)
+            # graphviz_draw_with_requests(limited_shared_graph, "lt", limited_required_nodes)
+            # graphviz_draw_with_requests_and_new_tasks(limited_shared_graph, "lt", limited_required_nodes, new_tasks)
+            #previous_materialized_set_helix = materialized_artifacts_helix
             budget_it = 0
             for b in Budget:
                 sh_previous_graph_2 = sh_previous_graph.copy()
-
-                ######################--LIMITED GRAPH--#########################
+                ######################--COLLAB GRAPH--#########################
                 limited_required_nodes, extra_cost_1, new_tasks = new_edges(sh_previous_graph, execution_graph)
-                store_diff(limited_required_nodes, extra_cost_1, request, uid + "_" + str(budget_it) + "_" + str(i))
                 materialized_artifacts_0 = rank_based_materializer(sh_previous_graph, b)
-                limited_shared_graph = add_load_tasks_to_the_graph(sh_previous_graph, materialized_artifacts_0)
+                limited_shared_graph = add_load_tasks_to_the_graph(sh_previous_graph, materialized_artifacts_0,loading_speed)
                 extract_nodes_and_edges(limited_shared_graph, uid + "_" + str(budget_it) + "_" + str(i), "limited", iteration)
+                store_diff(limited_required_nodes, extra_cost_1, request, uid + "_" + str(budget_it) + "_" + str(i))
                 #graphviz_draw_with_requests(limited_shared_graph, "lt", limited_required_nodes)
                 #graphviz_draw_with_requests_and_new_tasks(limited_shared_graph, "lt", limited_required_nodes, new_tasks)
                 ######################--EQUIVALENT GRAPH--######################
@@ -154,16 +118,19 @@ if __name__ == '__main__':
                 required_nodes, extra_cost_2,new_tasks = new_eq_edges(execution_graph, equivalent_graph,"no_fit")
                 store_diff(required_nodes, extra_cost_2, request, uid + "_eq_" + str(budget_it)+ "_" + str(i))
                 materialized_artifacts_1 = rank_based_materializer(equivalent_graph, b)
-                equivalent_graph = add_load_tasks_to_the_graph(equivalent_graph, materialized_artifacts_1)
+                equivalent_graph = add_load_tasks_to_the_graph(equivalent_graph, materialized_artifacts_1,loading_speed)
                 extract_nodes_and_edges(equivalent_graph, uid + "_" + str(budget_it)+ "_" + str(i), "equivalent", iteration)
                 #graphviz_draw_with_requests(equivalent_graph, "eq", required_nodes)
                 #graphviz_draw_with_requests_and_new_tasks(equivalent_graph, "eq", required_nodes, new_tasks)
                 print("extra cost")
-                print(str(extra_cost_1) + "_" + str(extra_cost_2))
+                print(str(iteration) + " __ " + str(extra_cost_1) + "_" + str(extra_cost_2))
                 budget_it = budget_it + 1
 
             iteration = iteration + 1
+            ##pickle_path = f"{uid}_{iteration}_advance.gpickle"
             sh_previous_graph = shared_artifact_graph.copy()
+            ##with open(pickle_path, 'wb') as file:
+               ## pickle.dump(sh_previous_graph, file)
 
     #graphviz_draw_with_requests(limited_shared_graph, "lt", limited_required_nodes)
     #graphviz_draw_with_requests(equivalent_graph, "eq", required_nodes)

@@ -5,7 +5,7 @@ import networkx as nx
 
 from Example.user_iterations import UR1_steps_1, UR1_steps_2, UR2_steps_1, UR2_steps_2, \
     UR1_steps_3, UR1_steps_4, all_steps, UR1_steps_5, UR1_steps_6
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
+from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
     new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
     graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks

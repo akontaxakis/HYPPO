@@ -5,19 +5,19 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
-from components.NLP.TF__MLP import TF__MLP
-from components.NLP.TR__MLP import TR__MLP
-from components.PCA.GPU__PCA import GPU__PCA
-from components.PCA.PCA_TensorFlow import TF__PCA
-from components.PCA.TR__PCA import TR__PCA
-from components.SVM.SVM_PyTorch import TR__LinearSVC
-from components.SVM.SVM_TensorFlow import TF__LinearSVC
-from components.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
-from components.SimpleImputer.TF__SimpleImputer import TF__SimpleImputer
-from components.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
-from components.StandardScaler.SS_GPU import GPU__StandardScaler
-from components.StandardScaler.StandardScalerTensorFlow import TF__StandardScaler
-from components.StandardScaler.TR_StandarScaler import TR__StandardScaler
+from Dictionary.NLP.TF__MLP import TF__MLP
+from Dictionary.NLP.TR__MLP import TR__MLP
+from Dictionary.PCA.GPU__PCA import GPU__PCA
+from Dictionary.PCA.PCA_TensorFlow import TF__PCA
+from Dictionary.PCA.TR__PCA import TR__PCA
+from Dictionary.SVM.SVM_PyTorch import TR__LinearSVC
+from Dictionary.SVM.SVM_TensorFlow import TF__LinearSVC
+from Dictionary.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
+from Dictionary.SimpleImputer.TF__SimpleImputer import TF__SimpleImputer
+from Dictionary.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
+from Dictionary.StandardScaler.SS_GPU import GPU__StandardScaler
+from Dictionary.StandardScaler.StandardScalerTensorFlow import TF__StandardScaler
+from Dictionary.StandardScaler.TR_StandarScaler import TR__StandardScaler
 
 GPU_steps_CN = [
     ('imputer', [GPU__SimpleImputer(strategy='mean')]),

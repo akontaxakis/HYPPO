@@ -1,7 +1,7 @@
 from Example.user_iterations import UR1_steps_0, UR1_steps_1, UR1_steps_2, UR2_steps_0, UR2_steps_1, UR2_steps_2, \
     UR1_steps_3, UR1_steps_4
 
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
+from libs.parser import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
     store_EDGES_artifact_graph, execute_pipeline, rank_based_materializer, new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph
 

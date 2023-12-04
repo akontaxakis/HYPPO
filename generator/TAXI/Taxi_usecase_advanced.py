@@ -12,10 +12,7 @@ from sklearn.preprocessing import StandardScaler
 
 from Example.user_iterations import collab_HIGGS_all_operators, collab_TAXI_all_operators, \
     collab_TAXI_all_operators_advance
-from components.Outlier_removal.Taxi_DateTimeFeatures import CustomFeatureEngineer
-from components.Outlier_removal.Taxi_OneHot import CustomOneHotEncoder
-from components.Outlier_removal.Taxi_Outlier_Removal import Taxi_Outlier_Removal
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
+from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
     new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
     graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks, execute_pipeline_ad
@@ -49,16 +46,19 @@ if __name__ == '__main__':
     import os
     os.chdir("C:/Users/adoko/PycharmProjects/pythonProject1")
     dataset = "TAXI"
-    uid = "TAXI_graph_100_ad"
-    iteration = 10
-    k = 100
-    N = 10
+    uid = "TAXI_big_ad"
+    iteration = 100
+
+
 
     pickle_path = f"{uid}_{iteration}_advance.gpickle"
     with open(pickle_path, 'rb') as file:
         shared_graph_raw = pickle.load(file)
-    uid = "TAXI_ADVANCED"
-    iteration =0
+    uid = "TAXI_ADVANCED_FINAL_05"
+
+    iteration =100
+    N = 3
+    k = 100
     X, y, raw_artifact_graph, cc = init_graph(dataset)
     X_test, X_train, y_test, y_train, cc = split_data(X, raw_artifact_graph, dataset, "no_sampling", y, cc)
     dataset_size = raw_artifact_graph.nodes[dataset]['size']
@@ -73,9 +73,10 @@ if __name__ == '__main__':
 
 
     dataset_size = shared_graph_raw.nodes[dataset]['size']
+    dataset_size =dataset_size*10
     print(dataset_size)
 
-    Budget = [0,dataset_size / 100000, dataset_size / 10000, dataset_size / 1000, dataset_size / 100, dataset_size / 10, dataset_size, dataset_size * 10, dataset_size * 100]
+    Budget = [dataset_size/50]
     #Budget = [dataset_size / 10, dataset_size, dataset_size * 10, dataset_size * 100,  dataset_size * 1000]
 
     loading_speed = 566255240
@@ -102,7 +103,7 @@ if __name__ == '__main__':
                 limited_required_nodes, extra_cost_1, new_tasks = new_edges(sh_previous_graph, execution_graph)
                 store_diff(limited_required_nodes, extra_cost_1, request, uid + "_" + str(budget_it) + "_" + str(i))
                 materialized_artifacts_0 = rank_based_materializer(sh_previous_graph, b)
-                limited_shared_graph = add_load_tasks_to_the_graph(sh_previous_graph, materialized_artifacts_0)
+                limited_shared_graph = add_load_tasks_to_the_graph(sh_previous_graph, materialized_artifacts_0,loading_speed)
                 extract_nodes_and_edges(limited_shared_graph, uid + "_" + str(budget_it) + "_" + str(i), "limited", iteration)
                 #graphviz_draw_with_requests(limited_shared_graph, "lt", limited_required_nodes)
                 #graphviz_draw_with_requests_and_new_tasks(limited_shared_graph, "lt", limited_required_nodes, new_tasks)
@@ -113,7 +114,7 @@ if __name__ == '__main__':
                 required_nodes, extra_cost_2,new_tasks = new_eq_edges(execution_graph, equivalent_graph,"no_fit")
                 store_diff(required_nodes, extra_cost_2, request, uid + "_eq_" + str(budget_it)+ "_" + str(i))
                 materialized_artifacts_1 = rank_based_materializer(equivalent_graph, b)
-                equivalent_graph = add_load_tasks_to_the_graph(equivalent_graph, materialized_artifacts_1)
+                equivalent_graph = add_load_tasks_to_the_graph(equivalent_graph, materialized_artifacts_1,loading_speed)
                 extract_nodes_and_edges(equivalent_graph, uid + "_" + str(budget_it)+ "_" + str(i), "equivalent", iteration)
                 #graphviz_draw_with_requests(equivalent_graph, "eq", required_nodes)
                 #graphviz_draw_with_requests_and_new_tasks(equivalent_graph, "eq", required_nodes, new_tasks)

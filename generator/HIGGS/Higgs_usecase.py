@@ -3,12 +3,9 @@ from itertools import product
 
 import networkx as nx
 
-from Example.user_iterations import collab_HIGGS_all_operators
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
-    new_edges, extract_nodes_and_edges, \
-    split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
-    graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks
-from libs.logical_pipeline_generator import logical_to_physical_random
+from parser.logical_pipeline_generator import logical_to_physical_random
+from parser.parser import init_graph, split_data, extract_nodes_and_edges, execute_pipeline
+from python_playground.Example.user_iterations import collab_HIGGS_all_operators
 
 
 def store_diff(required_nodes, extra_cost, request, uid):
@@ -40,16 +37,13 @@ if __name__ == '__main__':
     dataset = "HIGGS"
     #dataset = "breast_cancer"
     uid = "HIGGS_10_200_x3"
+    loading_speed = 566255240
     k = 50
-    N = 4
+    N = 5
 
     ##operators_dict = {key: value for key, value in collab_HIGGS_all_operators}
     operators_dict = {key: value for key, value in collab_HIGGS_all_operators}
     logical_pipelines_pool = "SI|SS|;PF|SVM(1);SVM(0.5)|AC;F1;CA;KS"
-    #mode = single or all_physical_pipelines
-    #pipelines = logical_to_physical(logical_pipelines_pool, operators_dict, 'all_physical_pipelines')
-
-    #pipelines = logical_to_physical_random(logical_pipelines_pool,operators_dict,k, 'all_physical_pipelines')
 
     X, y, raw_artifact_graph, cc = init_graph(dataset)
     X_test, X_train, y_test, y_train, cc = split_data(X, raw_artifact_graph, dataset, "no_sampling", y, cc)
@@ -61,7 +55,7 @@ if __name__ == '__main__':
     # Budget = [ dataset_size/1000]
 
     Budget = [0, dataset_size/2000, dataset_size/200, dataset_size/20, dataset_size/2]
-    loading_speed = 566255240
+
     for i in range(N):
 
         Trails = logical_to_physical_random(logical_pipelines_pool,operators_dict, k)
@@ -92,9 +86,11 @@ if __name__ == '__main__':
                 ######################--EQUIVALENT GRAPH--######################
 
                 # equivalent_graph, required_nodes, extra_cost = create_equivalent_graph_2(equivalent_graph,execution_graph.copy())
+
                 equivalent_graph = create_equivalent_graph_without_fit(sh_previous_graph_2)
-                required_nodes, extra_cost_2,new_tasks = new_eq_edges(execution_graph, equivalent_graph,"no_fit")
-                store_diff(required_nodes, extra_cost_2, request, uid + "_eq_" + str(budget_it)+ "_" + str(i))
+                required_artifacts, extra_cost_2,new_tasks = new_eq_edges(execution_graph, equivalent_graph,"no_fit")
+                store_diff(required_artifacts, extra_cost_2, request, uid + "_eq_" + str(budget_it)+ "_" + str(i))
+
                 materialized_artifacts_1 = rank_based_materializer(equivalent_graph, b)
                 equivalent_graph = add_load_tasks_to_the_graph(equivalent_graph, materialized_artifacts_1)
                 extract_nodes_and_edges(equivalent_graph, uid + "_" + str(budget_it)+ "_" + str(i), "equivalent", iteration)

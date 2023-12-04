@@ -5,10 +5,10 @@ from itertools import product
 import networkx as nx
 
 from Example.user_iterations import collab_HIGGS_all_operators, collab_TAXI_all_operators
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
+from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
     new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
-    graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks
+    graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks, update_and_merge_graphs
 from libs.logical_pipeline_generator import logical_to_physical_random
 
 
@@ -42,13 +42,15 @@ if __name__ == '__main__':
     #dataset = "breast_cancer"
     uid = "TAXI_graph_100_ad"
     uid = "TAXI_10_200_x10"
-    k = 50
-    N = 3
+    uid = "TAXI_f_graph_100_ad"
+    k = 100
+    N = 1
 
     operators_dict = {key: value for key, value in collab_TAXI_all_operators}
     #logical_pipelines_pool = "OR|OH|FE|;SS|RF();GBR();LGBM()|MSE"
-    logical_pipelines_pool = "OR|OH|FE|SI|SS|RI;LGBM;LA;KNR;LR|MSE;MAE;MPE"
+    #logical_pipelines_pool = "SI|SS|;PF|SVM(1);SVM(0.5)|AC;F1;CA;KS"
     #logical_pipelines_pool = "OR|OH|FE|SS|IM|RI;LR|MSE;MAE;MPE"
+    logical_pipelines_pool = "OR|OH|FE|SS|SI|RI;LR;LA;LGBM|MSE;MAE;MPE"
 
     X, y, raw_artifact_graph, cc = init_graph(dataset)
     X_test, X_train, y_test, y_train, cc = split_data(X, raw_artifact_graph, dataset, "no_sampling", y, cc)
@@ -59,7 +61,9 @@ if __name__ == '__main__':
     # Budget = [0, dataset_size / 10, dataset_size, dataset_size * 10]
     # loading_speed = 5602400
     # Budget = [ dataset_size/1000]
-    Budget = [0,dataset_size / 100000, dataset_size / 10000, dataset_size / 1000, dataset_size / 100, dataset_size / 10, dataset_size, dataset_size * 10, dataset_size * 100]
+    previous_materiliazed_set_lt = []
+    previous_materialized_set_eq = []
+    Budget = [dataset_size / 10]
     #Budget = [0, dataset_size/2000, dataset_size/200, dataset_size/20, dataset_size/2]
     loading_speed = 566255240
     for i in range(N):
@@ -73,7 +77,8 @@ if __name__ == '__main__':
             #######################--SHARED GRAPH--#########################
             execution_graph, artifacts, request = execute_pipeline(dataset, raw_artifact_graph.copy(), uid, trial,
                                                                    "no_sampling", cc, X_train, y_train, X_test, y_test)
-            shared_artifact_graph = nx.compose(execution_graph, sh_previous_graph)
+            ##shared_artifact_graph = nx.compose(execution_graph, sh_previous_graph)
+            shared_artifact_graph = update_and_merge_graphs(sh_previous_graph, execution_graph)
             extract_nodes_and_edges(shared_artifact_graph, uid+ "_" + str(i), "shared", iteration)
 
             ####################--Update Graphs for next iteration--#########

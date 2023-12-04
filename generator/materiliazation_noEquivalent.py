@@ -4,7 +4,7 @@ import networkx as nx
 
 from generator.pipelines_steps.first_set import SK_steps_CN, TF_steps_CN, TR_steps_CN, GPU_steps_CL, \
     SK_steps_CN_2, SK_steps_CN_1
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
+from libs.parser import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
     store_EDGES_artifact_graph, execute_pipeline, rank_based_materializer, new_edges, extract_nodes_and_edges
 import heapq
 

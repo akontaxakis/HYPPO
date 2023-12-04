@@ -3,12 +3,12 @@ from itertools import product
 
 import networkx as nx
 
-from Example.user_iterations import collab_HIGGS_all_operators
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
+from parser.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
     new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
     graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks
-from libs.logical_pipeline_generator import logical_to_physical_random
+from parser.logical_pipeline_generator import logical_to_physical_random
+from python_playground.Example.user_iterations import collab_HIGGS_all_operators
 
 
 def store_diff(required_nodes, extra_cost, request, uid):
@@ -41,17 +41,14 @@ if __name__ == '__main__':
     #dataset = "breast_cancer"
     uid = "HIGGS_10_200_x10"
     k = 50
-    N = 3
+    N = 5
     dataset_multiplier = [0.1, 1.0, 10]
     size_multiplier = [10, 1, 0.1]
     d =0
-    ##operators_dict = {key: value for key, value in collab_HIGGS_all_operators}
+
     operators_dict = {key: value for key, value in collab_HIGGS_all_operators}
     logical_pipelines_pool = "SI|SS|;PF|SVM(1);SVM(0.5);SVM(0.05)|AC;F1;CA;KS"
-    #mode = single or all_physical_pipelines
-    #pipelines = logical_to_physical(logical_pipelines_pool, operators_dict, 'all_physical_pipelines')
 
-    #pipelines = logical_to_physical_random(logical_pipelines_pool,operators_dict,k, 'all_physical_pipelines')
     for i in range(N):
 
         Trails = logical_to_physical_random(logical_pipelines_pool, operators_dict, k)

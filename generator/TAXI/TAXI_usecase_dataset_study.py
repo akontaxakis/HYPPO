@@ -4,7 +4,7 @@ from itertools import product
 import networkx as nx
 
 from Example.user_iterations import collab_HIGGS_all_operators, collab_TAXI_all_operators
-from libs.artifact_graph_lib import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
+from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
     new_edges, extract_nodes_and_edges, \
     split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
     graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks
@@ -39,9 +39,9 @@ if __name__ == '__main__':
     os.chdir("C:/Users/adoko/PycharmProjects/pythonProject1")
     dataset = "TAXI"
     #dataset = "breast_cancer"
-    uid = "TAXI_10_200_x10"
-    k = 50
-    N = 3
+    uid = "TAXI_budget_study"
+    number_of_pipelines = 50
+    N = 10
     dataset_multiplier = [0.1, 1.0, 10]
     size_multiplier = [10, 1, 0.1]
     d = 0
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     #pipelines = logical_to_physical_random(logical_pipelines_pool,operators_dict,k, 'all_physical_pipelines')
     for i in range(N):
 
-        Trails = logical_to_physical_random(logical_pipelines_pool, operators_dict, k)
+        Trails = logical_to_physical_random(logical_pipelines_pool, operators_dict, number_of_pipelines)
         print(Trails)
         for dm in range(3):
             X, y, raw_artifact_graph, cc = init_graph(dataset,dataset_multiplier[dm])

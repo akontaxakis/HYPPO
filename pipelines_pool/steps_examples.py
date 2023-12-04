@@ -17,23 +17,23 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 
 
-import components
-from components.Evaluation.ComputeAccuracy import AccuracyCalculator
-from components.Evaluation.F1_score import F1ScoreCalculator
-from components.General_Python_libraries.GL_MeanImputer import GL_MeanImputer
-from components.NLP.TF__MLP import TF__MLP
-from components.NLP.TR__MLP import TR__MLP
-from components.PCA.GPU_SS_PCA import GPU_StandardScaler__PCA
-from components.PCA.GPU__PCA import GPU__PCA
-from components.PCA.PCA_TensorFlow import TF__PCA
-from components.PCA.TR__PCA import TR__PCA
-from components.SVM.SVM_PyTorch import TR__LinearSVC
-from components.SVM.SVM_TensorFlow import TF__LinearSVC
-from components.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
-from components.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
-from components.StandardScaler.SS_GPU import GPU__StandardScaler
-from components.StandardScaler.StandardScalerTensorFlow import TF__StandardScaler
-from components.StandardScaler.TR_StandarScaler import TR__StandardScaler
+import Dictionary
+from Dictionary.Evaluation.ComputeAccuracy import AccuracyCalculator
+from Dictionary.Evaluation.F1_score import F1ScoreCalculator
+from Dictionary.CustomFunction.GL_MeanImputer import GL_MeanImputer
+from Dictionary.NLP.TF__MLP import TF__MLP
+from Dictionary.NLP.TR__MLP import TR__MLP
+from Dictionary.PCA.GPU_SS_PCA import GPU_StandardScaler__PCA
+from Dictionary.PCA.GPU__PCA import GPU__PCA
+from Dictionary.PCA.PCA_TensorFlow import TF__PCA
+from Dictionary.PCA.TR__PCA import TR__PCA
+from Dictionary.SVM.SVM_PyTorch import TR__LinearSVC
+from Dictionary.SVM.SVM_TensorFlow import TF__LinearSVC
+from Dictionary.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
+from Dictionary.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
+from Dictionary.StandardScaler.SS_GPU import GPU__StandardScaler
+from Dictionary.StandardScaler.StandardScalerTensorFlow import TF__StandardScaler
+from Dictionary.StandardScaler.TR_StandarScaler import TR__StandardScaler
 
 steps = [
     ('scaler', [StandardScaler(), GPU__StandardScaler()]),
