@@ -76,6 +76,10 @@ def compare_pickles(artifact_dir='artifacts', correlation_threshold=0.9):
 
     return highly_correlated_pairs
 
+def plot_artifact_graph(G):
+    pos = nx.drawing.layout.spring_layout(G, seed=42)
+    nx.draw(G, pos, with_labels=True, node_size=3000, node_color="skyblue", font_size=10)
+    plt.show()
 
 def fit_pipeline_with_artifacts(pipeline, X_train, y_train):
     artifacts = {}
@@ -104,12 +108,55 @@ def create_artifact_graph(artifacts):
 
     return G
 
+def print_metrics(metrics_dir='metrics'):
+    n_artifacts = 0;
+    os.makedirs(metrics_dir, exist_ok=True)
+    file_name = "steps_metrics"
+    metrics_path = os.path.join(metrics_dir, f"{file_name}.pkl")
+    with open(metrics_path, 'rb') as f:
+        print("load " + metrics_path)
+        step_times = pickle.load(f)
+    for step_name, step_time in step_times:
+        if step_name.endswith(("__store", "__score_time")):
+            n_artifacts = n_artifacts + 0
+        else:
+            n_artifacts = n_artifacts + 1
+        print("Step '{}' execution time: {}".format(step_name, step_time))
+    print("number of artifacts " + str(n_artifacts))
 
-def plot_artifact_graph(G):
-    pos = nx.drawing.layout.spring_layout(G, seed=42)
-    nx.draw(G, pos, with_labels=True, node_size=3000, node_color="skyblue", font_size=10)
-    plt.show()
+def compute_loading_times(metrics_dir='metrics', artifacts_dir='artifacts'):
+    os.makedirs(metrics_dir, exist_ok=True)
+    loading_times = {}
+    file_name = "loading_metrics"
+    metrics_path = os.path.join(metrics_dir, f"{file_name}.pkl")
 
+    if os.path.exists(metrics_path):
+        with open(metrics_path, 'rb') as f:
+            # print("load " + metrics_path)
+            loading_times = pickle.load(f)
+    else:
+        loading_times = {}
+
+    files = [f for f in os.listdir(artifacts_dir) if f.endswith('.pkl')]
+
+    for file in files:
+        file_path = os.path.join(artifacts_dir, file)
+
+        start_time = time.time()
+        with open(file_path, 'rb') as f:
+            _ = pickle.load(f)
+        f.close()
+        loading_time = time.time() - start_time
+        if (file in loading_times):
+            if (loading_time > loading_times[file]):
+                loading_times[file] = loading_time
+        else:
+            loading_times[file] = loading_time
+    # print(len(loading_times))
+    with open(metrics_path, 'wb') as f:
+        pickle.dump(loading_times, f)
+
+    return loading_times
 
 def get_steps(steps):
     mandatory_steps = []
@@ -360,60 +407,6 @@ def compute_pipeline_metrics_old(artifact_graph, pipeline, uid, X_train, X_test,
     return step_times, artifact_graph
 
 
-
-
-def print_metrics(metrics_dir='metrics'):
-    n_artifacts = 0;
-    os.makedirs(metrics_dir, exist_ok=True)
-    file_name = "steps_metrics"
-    metrics_path = os.path.join(metrics_dir, f"{file_name}.pkl")
-    with open(metrics_path, 'rb') as f:
-        print("load " + metrics_path)
-        step_times = pickle.load(f)
-    for step_name, step_time in step_times:
-        if step_name.endswith(("__store", "__score_time")):
-            n_artifacts = n_artifacts + 0
-        else:
-            n_artifacts = n_artifacts + 1
-        print("Step '{}' execution time: {}".format(step_name, step_time))
-    print("number of artifacts " + str(n_artifacts))
-
-
-def compute_loading_times(metrics_dir='metrics', artifacts_dir='artifacts'):
-    os.makedirs(metrics_dir, exist_ok=True)
-    loading_times = {}
-    file_name = "loading_metrics"
-    metrics_path = os.path.join(metrics_dir, f"{file_name}.pkl")
-
-    if os.path.exists(metrics_path):
-        with open(metrics_path, 'rb') as f:
-            # print("load " + metrics_path)
-            loading_times = pickle.load(f)
-    else:
-        loading_times = {}
-
-    files = [f for f in os.listdir(artifacts_dir) if f.endswith('.pkl')]
-
-    for file in files:
-        file_path = os.path.join(artifacts_dir, file)
-
-        start_time = time.time()
-        with open(file_path, 'rb') as f:
-            _ = pickle.load(f)
-        f.close()
-        loading_time = time.time() - start_time
-        if (file in loading_times):
-            if (loading_time > loading_times[file]):
-                loading_times[file] = loading_time
-        else:
-            loading_times[file] = loading_time
-    # print(len(loading_times))
-    with open(metrics_path, 'wb') as f:
-        pickle.dump(loading_times, f)
-
-    return loading_times
-
-
 def update_graph(artifact_graph, mem_usage, step_time, param, hs_previous, hs_current, platforms):
         artifact_graph.add_edge(hs_previous, hs_current+"_"+param,type=param, weight=step_time, execution_time=step_time, memory_usage=max(mem_usage), platform = platforms)
         return hs_current+"_"+param
@@ -425,7 +418,6 @@ def extract_platform(operator):
         return "SK"
     else:
         return split_strings[0]
-
 
 
 def text_inside_parentheses(s):

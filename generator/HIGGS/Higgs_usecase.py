@@ -5,17 +5,13 @@ import networkx as nx
 
 from parser.logical_pipeline_generator import logical_to_physical_random
 from parser.parser import init_graph, split_data, extract_nodes_and_edges, execute_pipeline
+
+from Components.augmenter import store_diff
+from Components.parser.parser import rank_based_materializer, add_load_tasks_to_the_graph, new_edges, \
+    create_equivalent_graph_without_fit, new_eq_edges
 from python_playground.Example.user_iterations import collab_HIGGS_all_operators
 
 
-def store_diff(required_nodes, extra_cost, request, uid):
-    os.makedirs('iterations_diff', exist_ok=True)
-    with open('iterations_diff/' + uid + '_iterations_diff_' + str(iteration) + '.txt', 'w') as f:
-        for node in required_nodes:
-            f.write(str(node) + ",")
-        f.write(str(extra_cost) + ",")
-        f.write(str(request))
-    print(required_nodes)
 
 
 def edge_match(e1, e2):

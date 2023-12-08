@@ -20,7 +20,6 @@ from sklearn.tree import DecisionTreeClassifier
 import Dictionary
 from Dictionary.Evaluation.ComputeAccuracy import AccuracyCalculator
 from Dictionary.Evaluation.F1_score import F1ScoreCalculator
-from Dictionary.CustomFunction.GL_MeanImputer import GL_MeanImputer
 from Dictionary.NLP.TF__MLP import TF__MLP
 from Dictionary.NLP.TR__MLP import TR__MLP
 from Dictionary.PCA.GPU_SS_PCA import GPU_StandardScaler__PCA
@@ -28,7 +27,7 @@ from Dictionary.PCA.GPU__PCA import GPU__PCA
 from Dictionary.PCA.PCA_TensorFlow import TF__PCA
 from Dictionary.PCA.TR__PCA import TR__PCA
 from Dictionary.SVM.SVM_PyTorch import TR__LinearSVC
-from Dictionary.SVM.SVM_TensorFlow import TF__LinearSVC
+from Dictionary.SVM.TF_SV import TF__LinearSVC
 from Dictionary.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
 from Dictionary.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
 from Dictionary.StandardScaler.SS_GPU import GPU__StandardScaler

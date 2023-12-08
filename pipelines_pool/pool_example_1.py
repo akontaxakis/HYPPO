@@ -11,7 +11,7 @@ from Dictionary.PCA.GPU__PCA import GPU__PCA
 from Dictionary.PCA.PCA_TensorFlow import TF__PCA
 from Dictionary.PCA.TR__PCA import TR__PCA
 from Dictionary.SVM.SVM_PyTorch import TR__LinearSVC
-from Dictionary.SVM.SVM_TensorFlow import TF__LinearSVC
+from Dictionary.SVM.TF_SV import TF__LinearSVC
 from Dictionary.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
 from Dictionary.SimpleImputer.TF__SimpleImputer import TF__SimpleImputer
 from Dictionary.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
