@@ -2,6 +2,31 @@
 ---
 HYPPO: Using Equivalences to Optimize Pipelines in Exploratory Machine Learning
 ---
-In this repository we present the code for the Hyppo System while the Plan generator was created as a seperated project at https://github.com/akontaxakis/Plan-Generator
+This public repository contains the implementation for the Hyppo System.
+
+![HYPPO’s system architecture]([https://onedrive.live.com/embed?resid=883817D68644DE5%2125087&authkey=%21AORdRWjhTobPdrQ&width=1586&height=859)
 
 
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ While the Plan generator was created as a separate project at https://github.com/akontaxakis/Plan-Generator
