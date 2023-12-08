@@ -6,7 +6,13 @@ This public repository contains the main functionality of the Hyppo System, in a
 
 ---
 ## Hyppo Components
- ### Dictionary:
+We implemented HYPPO on top of the sklearn.pipelines API
+ ### Dictionary 
+he HYPPO's dictionary involved all the physical operators that we have implemented. For extending the dictonary make sure you implement the core functions:
+- fit: This function is for training or fitting your operator to the data. It's where any initial analysis or setup specific to your operator should be done.
+- transform: This function is used for the transformation or processing of the data using your operator. Whatever unique operations your operator is designed to perform will be coded here.
+- score: If your operator involves any form of evaluation or scoring, this function should be implemented. It's used to assess the performance or output of your operator.
+Ensure Full HYPPO Compatibility: By implementing these functions, your custom operators will be compatible with HYPPO's features and functionalities, allowing them to seamlessly integrate with the rest of the system.
  ### Parser:
  ### Augmenter:
  ### History Manager:
