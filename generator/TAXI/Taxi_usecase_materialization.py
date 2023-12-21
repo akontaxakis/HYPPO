@@ -14,15 +14,6 @@ from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipelin
 from libs.logical_pipeline_generator import logical_to_physical_random
 
 
-def store_diff(required_nodes, extra_cost, request, uid):
-    os.makedirs('iterations_diff', exist_ok=True)
-    with open('iterations_diff/' + uid + '_iterations_diff_' + str(iteration) + '.txt', 'w') as f:
-        for node in required_nodes:
-            f.write(str(node) + ",")
-        f.write(str(extra_cost) + ",")
-        f.write(str(request))
-    print(required_nodes)
-
 
 def edge_match(e1, e2):
     return set(e2['platform']).issubset(set(e1['platform']))

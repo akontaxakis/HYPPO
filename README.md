@@ -6,7 +6,7 @@ This public repository contains the main functionality of the Hyppo System, in a
 
 ---
 ## Hyppo Components
-We implemented HYPPO on top of the sklearn.pipelines API
+We implemented HYPPO on top of the sklearn.pipelines API and networkX
  ### Dictionary 
 he HYPPO's dictionary involved all the physical operators that we have implemented. For extending the dictonary make sure you implement the core functions:
 - fit: This function is for training or fitting your operator to the data. It's where any initial analysis or setup specific to your operator should be done.

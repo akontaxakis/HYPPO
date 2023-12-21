@@ -1,24 +1,7 @@
-import networkx as nx
-from networkx.algorithms import isomorphism
 
-from Example.user_iterations import UR1_steps_0, UR1_steps_1, UR1_steps_2, UR2_steps_0, UR2_steps_1, UR2_steps_2, \
-    UR1_steps_3, UR1_steps_4, all_steps, UR1_steps_5, UR1_steps_6
-
-from libs.parser import init_graph, add_load_tasks_to_the_graph, plot_artifact_graph, \
-    store_EDGES_artifact_graph, execute_pipeline, rank_based_materializer, new_edges, extract_nodes_and_edges, \
-    split_data, create_equivalent_graph, new_eq_edges, pretty_graph_drawing, graphviz_draw, \
-    create_equivalent_graph_without_fit
 from itertools import product
 import random
 
-def store_diff(required_nodes, extra_cost, request, uid):
-    os.makedirs('iterations_diff', exist_ok=True)
-    with open('iterations_diff/' + uid + '_iterations_diff_' + str(iteration) + '.txt', 'w') as f:
-        for node in required_nodes:
-            f.write(str(node) + ",")
-        f.write(str(extra_cost) + ",")
-        f.write(str(request))
-    print(required_nodes)
 
 def edge_match(e1, e2):
     return set(e2['platform']).issubset(set(e1['platform']))

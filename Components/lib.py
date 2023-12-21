@@ -88,9 +88,6 @@ def load_artifact_graph(artifact_graph, sum, uid, objective, dataset, graph_dir=
     return artifact_graph
 
 
-
-
-
 def extract_artifact_graph(artifact_graph, graph_dir, uid):
     shared_graph_file = uid + "_shared_graph"
     shared_graph_path = os.path.join(graph_dir, f"{shared_graph_file}.plk")

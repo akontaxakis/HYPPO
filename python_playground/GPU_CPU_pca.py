@@ -5,7 +5,8 @@ from sklearn.preprocessing import StandardScaler
 import time
 
 # Load the breast cancer dataset
-from Dictionary.GPU__PCA import GPU__PCA
+from Dictionary.PCA.GPU__PCA import GPU__PCA
+
 if __name__ == '__main__':
     import os
     os.chdir("C:/Users/adoko/PycharmProjects/pythonProject1")
@@ -15,13 +16,13 @@ if __name__ == '__main__':
     # Create a scikit-learn pipeline that uses CPU PCA
     cpu_pipeline = Pipeline([
         ("scaler", StandardScaler()),
-        ("pca", PCA(n_components=2))
+        ("pca", PCA(n_components=20))
     ])
 
     # Create a scikit-learn pipeline that uses GPU PCA
     gpu_pipeline = Pipeline([
         ("scaler", StandardScaler()),
-        ("pca", GPU__PCA(n_components=2))
+        ("pca", GPU__PCA(n_components=20))
     ])
 
     # Measure the time it takes to fit and transform the data using CPU PCA

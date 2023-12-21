@@ -1,24 +1,17 @@
-import numpy as np
-import pandas as pd
-from imblearn.under_sampling import RandomUnderSampler
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.decomposition import PCA, TruncatedSVD, NMF
+
+from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectKBest, f_classif, SelectPercentile, SelectFromModel
 from sklearn.impute import SimpleImputer, KNNImputer, MissingIndicator
 from sklearn.linear_model import Lasso, LogisticRegression
-from sklearn.manifold import TSNE, Isomap
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler, PolynomialFeatures, MinMaxScaler, RobustScaler, QuantileTransformer, \
-    FunctionTransformer
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures, MinMaxScaler, RobustScaler, QuantileTransformer
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 
 
-import Dictionary
-from Dictionary.Evaluation.ComputeAccuracy import AccuracyCalculator
 from Dictionary.Evaluation.F1_score import F1ScoreCalculator
 from Dictionary.NLP.TF__MLP import TF__MLP
 from Dictionary.NLP.TR__MLP import TR__MLP
@@ -29,14 +22,13 @@ from Dictionary.PCA.TR__PCA import TR__PCA
 from Dictionary.SVM.SVM_PyTorch import TR__LinearSVC
 from Dictionary.SVM.TF_SV import TF__LinearSVC
 from Dictionary.SimpleImputer.GPU__SimpleImputer import GPU__SimpleImputer
-from Dictionary.SimpleImputer.TR__SimpleImputer import TR__SimpleImputer
 from Dictionary.StandardScaler.SS_GPU import GPU__StandardScaler
 from Dictionary.StandardScaler.StandardScalerTensorFlow import TF__StandardScaler
 from Dictionary.StandardScaler.TR_StandarScaler import TR__StandardScaler
 
 steps = [
     ('scaler', [StandardScaler(), GPU__StandardScaler()]),
-    ('imputer', [SimpleImputer(strategy='mean')]),
+    ('impute', [SimpleImputer(strategy='mean')]),
     ('polynomial_features', [PolynomialFeatures(degree=2), PolynomialFeatures(degree=3)]),
     ('feature_selection', [
         SelectKBest(f_classif, k=10),
@@ -65,26 +57,6 @@ ad_eq_steps = [
       TruncatedSVD(n_components=10)]),
     ('classifier', [
         LogisticRegression(max_iter=10000, solver='liblinear'),
-        KNeighborsClassifier(),
-        SVC(),
-        DecisionTreeClassifier(),
-        RandomForestClassifier()
-    ])
-]
-
-simple_eq_steps_bigger = [
-    ('1.scaler', [StandardScaler(), GPU__StandardScaler()]),
-    ('2.polynomial_features', [PolynomialFeatures(degree=2), PolynomialFeatures(degree=3)]),
-    ('3.feature_selection', [
-        SelectKBest(f_classif, k=10),
-        SelectPercentile(f_classif, percentile=50),
-        SelectFromModel(Lasso(alpha=0.01)),
-        SelectFromModel(RandomForestRegressor(n_estimators=100, random_state=42))
-    ]),
-    ('4.dimensionality_reduction',
-     [GPU__PCA(n_components=10), PCA(n_components=10),
-      TruncatedSVD(n_components=10)]),
-    ('classifier', [
         KNeighborsClassifier(),
         SVC(),
         DecisionTreeClassifier(),
@@ -127,7 +99,7 @@ simple_eq_steps = [
 ]
 
 simple_eq_steps_1 = [
-    ('1. scaler_dimensionality_reduction',[GPU_StandardScaler__PCA(n_components=10)]),
+    ('1. scaler_dimensionality_reduction', [GPU_StandardScaler__PCA(n_components=10)]),
     ('classifier', [
         LogisticRegression(max_iter=10000, solver='liblinear'),
         KNeighborsClassifier(),
@@ -164,37 +136,20 @@ person_3_steps = [
     ])
 ]
 
-AG_3_steps = [
-    ('1.scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(), QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
-    ('2.imputer', [GPU__SimpleImputer(strategy='mean'), SimpleImputer(strategy='mean'), KNNImputer(n_neighbors=5), MissingIndicator(features='all')]),
-    #('3.polynomial_features', [PolynomialFeatures(degree=3)]),
-    ('3.feature_selection', [
-        SelectKBest(f_classif, k=10),
-        SelectPercentile(f_classif, percentile=50),
-        SelectFromModel(RandomForestRegressor(n_estimators=100, random_state=42))
-    ]),
-    ('4.dimensionality_reduction',
-     [ PCA(n_components=10),
-      TruncatedSVD(n_components=10)]),
-    ('classifier', [
-        KNeighborsClassifier(),
-        SVC(),
-        RandomForestClassifier(),
-        DecisionTreeClassifier()
-    ])
-]
 
 AG_3_steps = [
-    ('1.scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(), QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
-    ('2.imputer', [GPU__SimpleImputer(strategy='mean'), SimpleImputer(strategy='mean'), KNNImputer(n_neighbors=5), MissingIndicator(features='all')]),
-    #('3.polynomial_features', [PolynomialFeatures(degree=3)]),
+    ('1.scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(),
+                  QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
+    ('2.imputer', [GPU__SimpleImputer(strategy='mean'), SimpleImputer(strategy='mean'), KNNImputer(n_neighbors=5),
+                   MissingIndicator(features='all')]),
+    # ('3.polynomial_features', [PolynomialFeatures(degree=3)]),
     ('3.feature_selection', [
         SelectKBest(f_classif, k=10),
         SelectPercentile(f_classif, percentile=50),
         SelectFromModel(RandomForestRegressor(n_estimators=100, random_state=42))
     ]),
     ('4.dimensionality_reduction',
-     [ PCA(n_components=10),
+     [PCA(n_components=10),
       TruncatedSVD(n_components=10)]),
     ('classifier', [
         KNeighborsClassifier(),
@@ -205,9 +160,10 @@ AG_3_steps = [
 ]
 
 all_steps = [
-    ('scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(), QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
+    ('scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(),
+                QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
     ('imputer', [GPU__SimpleImputer(strategy='mean'), SimpleImputer(strategy='mean'), KNNImputer(n_neighbors=5),
-                 TR__StandardScaler,TF__StandardScaler]),
+                 TR__StandardScaler, TF__StandardScaler]),
     ('feature_selection', [
         SelectKBest(f_classif, k=12),
         SelectPercentile(f_classif, percentile=50),
@@ -215,7 +171,7 @@ all_steps = [
     ]),
     ('dimensionality_reduction',
      [PCA(n_components=10),
-      TruncatedSVD(n_components=10)]), TR__PCA(n_components=10),GPU__PCA(n_components=10),
+      TruncatedSVD(n_components=10)]), TR__PCA(n_components=10), GPU__PCA(n_components=10),
     ('classifier', [
         KNeighborsClassifier(),
         SVC(),
@@ -223,7 +179,7 @@ all_steps = [
         TF__LinearSVC,
         TR__MLP(),
         TF__MLP(),
-        LinearSVC(loss="hinge", max_iter = 100),
+        LinearSVC(loss="hinge", max_iter=100),
         MLPClassifier(hidden_layer_sizes=(16,), max_iter=10)]),
     ('score', [
         F1ScoreCalculator('nan')])
@@ -231,8 +187,9 @@ all_steps = [
 
 steps_with_sampling = [
     ('imputer', [GPU__SimpleImputer(strategy='mean'), SimpleImputer(strategy='mean'), KNNImputer(n_neighbors=5),
-                   MissingIndicator(features='all')]),
-    ('scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(), QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
+                 MissingIndicator(features='all')]),
+    ('scaler', [StandardScaler(), GPU__StandardScaler(), MinMaxScaler(), RobustScaler(),
+                QuantileTransformer(n_quantiles=100, output_distribution='normal')]),
 
     ('feature_selection', [
         SelectKBest(f_classif, k=12),
@@ -240,7 +197,7 @@ steps_with_sampling = [
         SelectFromModel(RandomForestRegressor(n_estimators=20, random_state=42))
     ]),
     ('dimensionality_reduction',
-     [ PCA(n_components=10),
+     [PCA(n_components=10),
       TruncatedSVD(n_components=10)]),
     ('classifier', [
         KNeighborsClassifier(),
@@ -250,16 +207,6 @@ steps_with_sampling = [
     ])
 ]
 
-test_sk_tf_trch_steps = [
-    ('imputer', [GPU__SimpleImputer(strategy='mean'), TR__SimpleImputer(strategy='mean'), SimpleImputer(strategy='mean')]),
-    ('scaler', [TR__StandardScaler(), TF__StandardScaler(), StandardScaler()]),
-    ('dimensionality_reduction', [PCA(n_components=10), GPU__PCA(n_components=10), TF__PCA(n_components=10), TR__PCA(n_components=10)]),
-    ('classifier', [
-        TF__LinearSVC(),
-        TR__LinearSVC(),
-        LinearSVC(loss="hinge", max_iter = 100)
-    ])
-]
 
 sk_tf_trch_steps = [
     ('scaler', [TF__StandardScaler(), StandardScaler()]),
@@ -272,4 +219,3 @@ sk_tf_trch_steps = [
 
     ])
 ]
-

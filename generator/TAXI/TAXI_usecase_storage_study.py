@@ -1,24 +1,11 @@
-import random
+
 from itertools import product
 
 import networkx as nx
 
-from Example.user_iterations import collab_HIGGS_all_operators, collab_TAXI_all_operators
-from libs.parser import init_graph, add_load_tasks_to_the_graph, execute_pipeline, rank_based_materializer, \
-    new_edges, extract_nodes_and_edges, \
-    split_data, create_equivalent_graph, new_eq_edges, create_equivalent_graph_without_fit, graphviz_draw, \
-    graphviz_draw_with_requests, graphviz_draw_with_requests_and_new_tasks
-from libs.logical_pipeline_generator import logical_to_physical_random
 
 
-def store_diff(required_nodes, extra_cost, request, uid):
-    os.makedirs('iterations_diff', exist_ok=True)
-    with open('iterations_diff/' + uid + '_iterations_diff_' + str(iteration) + '.txt', 'w') as f:
-        for node in required_nodes:
-            f.write(str(node) + ",")
-        f.write(str(extra_cost) + ",")
-        f.write(str(request))
-    print(required_nodes)
+
 
 
 def edge_match(e1, e2):

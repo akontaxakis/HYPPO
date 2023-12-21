@@ -1,7 +1,6 @@
 import os
 import pickle
 import time
-
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -121,7 +120,7 @@ def generate_shared_graph(dataset, artifact_graph, uid, steps, N, task, X, y, mo
 
 
 def generate_shared_graph_m(dataset, artifact_graph, uid, steps, N, task, X, y, mode, graph_dir='graphs/shared_graphs',
-                          artifact_dir='artifacts'):
+                            artifact_dir='artifacts'):
     os.makedirs(artifact_dir, exist_ok=True)
     os.makedirs(graph_dir, exist_ok=True)
     shared_graph_file = uid + "_shared_graph"
@@ -130,7 +129,7 @@ def generate_shared_graph_m(dataset, artifact_graph, uid, steps, N, task, X, y, 
         with open(shared_graph_path, 'rb') as f:
             print("load" + shared_graph_path)
             artifact_graph = pickle.load(f)
-    #print(type(X))
+    # print(type(X))
     sum = 0
     artifacts = []
     if task == 'classifier':
@@ -143,7 +142,7 @@ def generate_shared_graph_m(dataset, artifact_graph, uid, steps, N, task, X, y, 
         # G.add_node("X_test")
         artifact_graph.add_node("y_train__")
         # G.add_node("y_test")
-        artifact_graph.add_edge(dataset, "split", weight=end_time - start_time,execution_time=end_time - start_time,
+        artifact_graph.add_edge(dataset, "split", weight=end_time - start_time, execution_time=end_time - start_time,
                                 memory_usage=max(mem_usage))
         artifact_graph.add_edge("split", "X_train__", weight=0.000001, execution_time=0,
                                 memory_usage=0)
@@ -153,16 +152,18 @@ def generate_shared_graph_m(dataset, artifact_graph, uid, steps, N, task, X, y, 
                                 memory_usage=0)
 
         if mode == "sampling":
-            mem_usage = memory_usage(lambda:sample(X_train, y_train, 0.1))
+            mem_usage = memory_usage(lambda: sample(X_train, y_train, 0.1))
             start_time = time.time()
             sample_X_train, sample_y_train = sample(X_train, y_train, 0.1)
             end_time = time.time()
-            artifact_graph.add_edge("X_train__", "2sample_X_train__", weight=end_time - start_time, execution_time=end_time - start_time,
-                                memory_usage=max(mem_usage))
-        # G.add_edge("split", "X_test",weight=0, execution_time=0,
-        #           memory_usage=0)
-            artifact_graph.add_edge("y_train__", "2sample_y_train__", weight=end_time - start_time, execution_time=end_time - start_time,
-                                memory_usage=max(mem_usage))
+            artifact_graph.add_edge("X_train__", "2sample_X_train__", weight=end_time - start_time,
+                                    execution_time=end_time - start_time,
+                                    memory_usage=max(mem_usage))
+            # G.add_edge("split", "X_test",weight=0, execution_time=0,
+            #           memory_usage=0)
+            artifact_graph.add_edge("y_train__", "2sample_y_train__", weight=end_time - start_time,
+                                    execution_time=end_time - start_time,
+                                    memory_usage=max(mem_usage))
 
     for i in range(N):
         pipeline = generate_pipeline(steps, len(steps))
@@ -174,29 +175,32 @@ def generate_shared_graph_m(dataset, artifact_graph, uid, steps, N, task, X, y, 
                 if mode == "sampling":
                     pipeline.fit(sample_X_train, sample_y_train)
                     score = pipeline.score(X_test, y_test)
-                    artifact_graph, artifacts = compute_pipeline_metrics(artifact_graph, pipeline, uid, sample_X_train, X_test, sample_y_train, y_test, artifacts, mode)
+                    artifact_graph, artifacts = compute_pipeline_metrics(artifact_graph, pipeline, uid, sample_X_train,
+                                                                         X_test, sample_y_train, y_test, artifacts,
+                                                                         mode)
                 else:
                     pipeline.fit(X_train, y_train)
                     score = pipeline.score(X_test, y_test)
-                    artifact_graph, artifacts = compute_pipeline_metrics(artifact_graph, pipeline, uid, X_train, X_test, y_train, y_test, artifacts, mode)
+                    artifact_graph, artifacts = compute_pipeline_metrics(artifact_graph, pipeline, uid, X_train, X_test,
+                                                                         y_train, y_test, artifacts, mode)
                 sum = sum + 1
             else:
                 score = None
 
 
-        #except TypeError:
+        # except TypeError:
         #   print("Oops!  Wrong Type.  Try again...")
         #   print(pipeline)
-        #except ValueError:
+        # except ValueError:
         #    print("Oops!  That was no valid number.  Try again...")
         #    print(pipeline)
         except pycuda._driver.LogicError:
             print("Oops!  cuda")
             print(pipeline)
-        #except InvalidArgumentError:
+        # except InvalidArgumentError:
         #    print("Oops!  tensorflow")
         #    print(pipeline)
-        #except AttributeError:
+        # except AttributeError:
         #    print("Oops!  Attribute")
         #    print(pipeline)
     with open(shared_graph_path, 'wb') as f:
@@ -204,6 +208,7 @@ def generate_shared_graph_m(dataset, artifact_graph, uid, steps, N, task, X, y, 
         pickle.dump(artifact_graph, f)
 
     return artifact_graph, artifacts
+
 
 def sample(X_train, y_train, rate):
     sample_size = int(X_train.shape[0] * rate)
@@ -216,13 +221,14 @@ def sample(X_train, y_train, rate):
     sample_y_train = y_train[sample_indices]
     return sample_X_train, sample_y_train
 
+
 def init_graph(dataset):
     # Load the Breast Cancer Wisconsin dataset
     cc = 0
     G = nx.DiGraph()
-    G.add_node("source", type="source", size= 0, cc= cc)
+    G.add_node("source", type="source", size=0, cc=cc)
     start_time = time.time()
-    if dataset == "breast_cancer" :
+    if dataset == "breast_cancer":
         data = load_breast_cancer()
         X, y = data.data, data.target
         X = np.random.rand(100000, 100)
@@ -253,99 +259,56 @@ def init_graph(dataset):
         y = data['target'].values
         X = data.drop('target', axis=1).values
 
-    # data = fetch_20newsgroups(subset='all', remove=('headers', 'footers', 'quotes'))
-
     end_time = time.time()
-    cc =end_time - start_time
-    G.add_node(dataset, type="raw", size=X.size * X.itemsize, cc = cc, frequency = 1)
-    platforms = []
-    platforms.append("python")
-    G.add_edge("source", dataset,type="load", weight=end_time - start_time + 0.000001, execution_time=end_time - start_time,
-               memory_usage=0, platform = platforms)
+    cc = end_time - start_time
+    G.add_node(dataset, type="raw", size=X.size * X.itemsize, cc=cc, frequency=1)
+    platforms = ["python"]
+    G.add_edge("source", dataset, type="load", weight=end_time - start_time + 0.000001,
+               execution_time=end_time - start_time,
+               memory_usage=0, platform=platforms)
     return X, y, G, cc
 
-def execute_pipeline(dataset, artifact_graph, uid, steps,mode,cc,X_train, y_train,X_test, y_test):
-    #artifact_graph, shared_graph_path = extract_artifact_graph(artifact_graph, uid)
-    sum = 0
+
+def execute_pipeline(artifact_graph, uid, steps, mode, cc, X_train, y_train, X_test, y_test):
     artifacts = []
     pipeline = steps
-    ##pipeline = generate_pipeline(steps, len(steps))
-    print(pipeline)
-    try:
-        new_pipeline = clone(pipeline)
-        cc1 = cc
-        artifact_graph, artifacts, new_pipeline = compute_pipeline_metrics_training(artifact_graph, new_pipeline, uid,X_train, y_train, artifacts, mode,cc1)
-        artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation(artifact_graph, new_pipeline, uid,X_test, y_test, artifacts)
-
-        sum = sum + 1
-        #except TypeError:
-        #   print("Oops!  Wrong Type.  Try again...")
-        #   print(pipeline)
-        #except ValueError:
-        #    print("Oops!  That was no valid number.  Try again...")
-        #    print(pipeline)
-    except pycuda._driver.LogicError:
-        print("Oops!  cuda")
-        print(pipeline)
-        #except InvalidArgumentError:
-        #    print("Oops!  tensorflow")
-        #    print(pipeline)
-        #except AttributeError:
-        #    print("Oops!  Attribute")
-        #    print(pipeline)
-   # with open(shared_graph_path, 'wb') as f:
-   #     print("save" + shared_graph_path)
-   #     pickle.dump(artifact_graph, f)
-
-    return artifact_graph, artifacts,request
-
-def execute_pipeline_helix(dataset, artifact_graph, uid, steps,mode,cc,X_train, y_train,X_test, y_test, budget):
-
-    artifacts = []
-    pipeline = steps
-    ##pipeline = generate_pipeline(steps, len(steps))
-    print(pipeline)
-    try:
-        new_pipeline = clone(pipeline)
-        cc1 = cc
-        artifact_graph, artifacts, new_pipeline, materialized_artifacts, budget = compute_pipeline_metrics_training_helix(artifact_graph, new_pipeline, uid, X_train, y_train, artifacts, mode, cc1, budget)
-        artifact_graph, artifacts, request, materialized_artifacts = compute_pipeline_metrics_evaluation_helix(artifact_graph, new_pipeline, uid, X_test, y_test, artifacts, materialized_artifacts, budget)
-
-        #except TypeError:
-        #   print("Oops!  Wrong Type.  Try again...")
-        #   print(pipeline)
-        #except ValueError:
-        #    print("Oops!  That was no valid number.  Try again...")
-        #    print(pipeline)
-    except pycuda._driver.LogicError:
-        print("Oops!  cuda")
-        print(pipeline)
-        #except InvalidArgumentError:
-        #    print("Oops!  tensorflow")
-        #    print(pipeline)
-        #except AttributeError:
-        #    print("Oops!  Attribute")
-        #    print(pipeline)
-   # with open(shared_graph_path, 'wb') as f:
-   #     print("save" + shared_graph_path)
-   #     pickle.dump(artifact_graph, f)
-
-    return artifact_graph, artifacts,request,materialized_artifacts
-
-def execute_pipeline_ad(dataset, artifact_graph, uid, steps,mode,cc,X_train, y_train,X_test, y_test ):
-    #artifact_graph, shared_graph_path = extract_artifact_graph(artifact_graph, uid)
-    sum = 0
-    artifacts = []
-    pipeline = steps
-    ##pipeline = generate_pipeline(steps, len(steps))
-    print(pipeline)
-
     new_pipeline = clone(pipeline)
     cc1 = cc
-    artifact_graph, artifacts, new_pipeline, selected_models = compute_pipeline_metrics_training_ad(artifact_graph, new_pipeline, uid, X_train, y_train, artifacts, mode,cc1)
-    artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation_ad(artifact_graph, new_pipeline, uid, X_test, y_test, artifacts)
+    artifact_graph, artifacts, new_pipeline = compute_pipeline_metrics_training(artifact_graph, new_pipeline, uid,
+                                                                                X_train, y_train, artifacts, mode, cc1)
+    artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation(artifact_graph, new_pipeline, uid, X_test,
+                                                                             y_test, artifacts)
+    return artifact_graph, artifacts, request
+
+
+def execute_pipeline_helix(dataset, artifact_graph, uid, steps, mode, cc, X_train, y_train, X_test, y_test, budget):
+    artifacts = []
+    pipeline = steps
+    new_pipeline = clone(pipeline)
+    cc1 = cc
+    artifact_graph, artifacts, new_pipeline, materialized_artifacts, budget = compute_pipeline_metrics_training_helix(
+        artifact_graph, new_pipeline, uid, X_train, y_train, artifacts, mode, cc1, budget)
+    artifact_graph, artifacts, request, materialized_artifacts = compute_pipeline_metrics_evaluation_helix(
+        artifact_graph, new_pipeline, uid, X_test, y_test, artifacts, materialized_artifacts, budget)
+    return artifact_graph, artifacts, request, materialized_artifacts
+
+
+def execute_pipeline_ad(dataset, artifact_graph, uid, steps, mode, cc, X_train, y_train, X_test, y_test):
+
+    artifacts = []
+    pipeline = steps
+    new_pipeline = clone(pipeline)
+    cc1 = cc
+    artifact_graph, artifacts, new_pipeline, selected_models = compute_pipeline_metrics_training_ad(artifact_graph,
+                                                                                                    new_pipeline, uid,
+                                                                                                    X_train, y_train,
+                                                                                                    artifacts, mode,
+                                                                                                    cc1)
+    artifact_graph, artifacts, request = compute_pipeline_metrics_evaluation_ad(artifact_graph, new_pipeline, uid,
+                                                                                X_test, y_test, artifacts)
 
     return artifact_graph, artifacts, request
+
 
 def split_data(X, artifact_graph, dataset, mode, y, cc):
     platforms = []
@@ -353,39 +316,36 @@ def split_data(X, artifact_graph, dataset, mode, y, cc):
     start_time = time.time()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     end_time = time.time()
-    mem_usage = [0,0]# memory_usage(lambda: train_test_split(X, y, test_size=0.2, random_state=42))
+    mem_usage = [0, 0]  # memory_usage(lambda: train_test_split(X, y, test_size=0.2, random_state=42))
     # G.add_node("y_test")
     step_time = end_time - start_time
     cc = cc + step_time
 
-    artifact_graph.add_node("X_train__", type="training", size=X_train.__sizeof__(),cc=cc,frequency = 1)
-    artifact_graph.add_node("X_test__", type="test", size=X_test.__sizeof__(),cc=cc,frequency = 1)
-    artifact_graph.add_node("split", type="split", size=0, cc=0,frequency = 1)
+    artifact_graph.add_node("X_train__", type="training", size=X_train.__sizeof__(), cc=cc, frequency=1)
+    artifact_graph.add_node("X_test__", type="test", size=X_test.__sizeof__(), cc=cc, frequency=1)
+    artifact_graph.add_node("split", type="split", size=0, cc=0, frequency=1)
 
-    artifact_graph.add_edge(dataset, "split",type="split", weight=step_time, execution_time=step_time,
-                            memory_usage=max(mem_usage),platform = platforms)
-    artifact_graph.add_edge("split", "X_train__",type="split", weight=0.000001, execution_time=0,
-                            memory_usage=0,platform = platforms)
+    artifact_graph.add_edge(dataset, "split", type="split", weight=step_time, execution_time=step_time,
+                            memory_usage=max(mem_usage), platform=platforms)
+    artifact_graph.add_edge("split", "X_train__", type="split", weight=0.000001, execution_time=0,
+                            memory_usage=0, platform=platforms)
     # G.add_edge("split", "X_test",weight=0, execution_time=0,
     #           memory_usage=0)
-    artifact_graph.add_edge("split", "X_test__",type="split", weight=0.000001, execution_time=0,
-                            memory_usage=0,platform = platforms)
+    artifact_graph.add_edge("split", "X_test__", type="split", weight=0.000001, execution_time=0,
+                            memory_usage=0, platform=platforms)
     if mode == "sampling":
-        mem_usage = [0,0]#memory_usage(lambda: sample(X_train, y_train, 0.1))
+        mem_usage = [0, 0]  # memory_usage(lambda: sample(X_train, y_train, 0.1))
         start_time = time.time()
         X_train, y_train = sample(X_train, y_train, 0.1)
         end_time = time.time()
         step_time = end_time - start_time
         artifact_graph.add_edge("X_train__", "2sample_X_train__", weight=end_time - start_time,
                                 execution_time=end_time - start_time,
-                                memory_usage=max(mem_usage),platform = platforms)
+                                memory_usage=max(mem_usage), platform=platforms)
         # G.add_edge("split", "X_test",weight=0, execution_time=0,
         #           memory_usage=0)
         artifact_graph.add_edge("X_test__", "2sample_X_test__", weight=end_time - start_time,
                                 execution_time=end_time - start_time,
-                                memory_usage=max(mem_usage),platform = platforms)
+                                memory_usage=max(mem_usage), platform=platforms)
 
-    return X_test, X_train, y_test, y_train,cc
-
-
-
+    return X_test, X_train, y_test, y_train, cc

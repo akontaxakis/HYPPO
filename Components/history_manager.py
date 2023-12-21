@@ -2,7 +2,7 @@ import heapq
 import os
 
 
-def rank_based_materializer(artifact_graph,Budget):
+def rank_based_materializer(artifact_graph, Budget):
     pq = []
     materialized_artifacts = []
     size_sofar = 0
@@ -20,7 +20,8 @@ def rank_based_materializer(artifact_graph,Budget):
 
     return materialized_artifacts
 
-def rank_based_materializer_frequency(artifacts,Budget):
+
+def rank_based_materializer_frequency(artifacts, Budget):
     pq = []
     materialized_artifacts = []
     size_sofar = 0
@@ -28,7 +29,7 @@ def rank_based_materializer_frequency(artifacts,Budget):
         return materialized_artifacts
     for node_id, attrs in artifacts(data=True):
         if attrs['type'] not in ["super", "raw", "split", 'source']:
-            priority = -1 * (attrs['frequency']*attrs['cc']) / attrs['size']
+            priority = -1 * (attrs['frequency'] * attrs['cc']) / attrs['size']
             heapq.heappush(pq, (priority, node_id))
     while pq:
         priority, item = heapq.heappop(pq)
@@ -39,13 +40,14 @@ def rank_based_materializer_frequency(artifacts,Budget):
     return materialized_artifacts
 
 
-def add_load_tasks_to_the_graph(shared_artifact_graph, materialized_artifacts,loading_speed):
+def add_load_tasks_to_the_graph(shared_artifact_graph, materialized_artifacts, loading_speed):
     platforms = []
     platforms.append("python")
     limited_shared_graph = shared_artifact_graph.copy()
     for artifact in materialized_artifacts:
-        loading_time = limited_shared_graph.nodes[artifact]['size']/loading_speed
-        limited_shared_graph.add_edge("source", artifact, type = 'load', weight=loading_time,execution_time=loading_time,memory_usage=0, platform =platforms )
+        loading_time = limited_shared_graph.nodes[artifact]['size'] / loading_speed
+        limited_shared_graph.add_edge("source", artifact, type='load', weight=loading_time, execution_time=loading_time,
+                                      memory_usage=0, platform=platforms)
     return limited_shared_graph
 
 
@@ -79,15 +81,15 @@ def update_and_merge_graphs(H, E):
     return H
 
 
-def extract_nodes_and_edges(artifact_graph, uid,type, iteration,graph_dir='graphs/iteration_graphs'):
+def extract_nodes_and_edges(artifact_graph, uid, type, iteration, graph_dir='graphs/iteration_graphs'):
     os.makedirs(graph_dir, exist_ok=True)
     graph_file = uid + "_" + type + "_" + str(iteration)
-    shared_graph_path = os.path.join(graph_dir,graph_file)
+    shared_graph_path = os.path.join(graph_dir, graph_file)
     os.makedirs(shared_graph_path, exist_ok=True)
     if os.path.exists(shared_graph_path):
-        with open(shared_graph_path+'/nodes.txt', 'w') as f:
+        with open(shared_graph_path + '/nodes.txt', 'w') as f:
             for node in artifact_graph.nodes(data=True):
                 f.write(str(node) + "\n")
-        with open(shared_graph_path+'/edges.txt', 'w') as f:
+        with open(shared_graph_path + '/edges.txt', 'w') as f:
             for node in artifact_graph.edges(data=True):
                 f.write(str(node) + "\n")
