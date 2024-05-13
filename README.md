@@ -1,4 +1,5 @@
-![HYPPO_icon](https://onedrive.live.com/embed?resid=883817D68644DE5%2130521&authkey=%21AMo4Yj-4T-lTiu8&width=1400&height=500)
+
+![HYPPO_icon](https://onedrive.live.com/embed?resid=883817D68644DE5%2130521&authkey=%21AMo4Yj-4T-lTiu8&width=1586&height=859)
 ---
 This public repository contains the main functionality of the Hyppo System, in addition it also contrains a pipeline generator. 
 
@@ -43,8 +44,12 @@ the Plan generator was created as a separate project at https://github.com/akont
 
 - git clone https://github.com/akontaxakis/HYPPO.git
 
+
 ### Contact
 
 For any questions don't hesitate to ask:
 
 Antonios Kontaxakis, antonios.kontaxakis-ATNOSPAM-ulb.be
+
+
+
