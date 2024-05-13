@@ -1,4 +1,5 @@
- HYPPO: Using Equivalences to Optimize Pipelines in Exploratory Machine Learning
+![HYPPO_icon](https://onedrive.live.com/embed?resid=883817D68644DE5%2130520&authkey=%21AP714HEzinqTIoY&width=2000&height=1739)
+Using Equivalences to Optimize Pipelines in Exploratory Machine Learning
 ---
 This public repository contains the main functionality of the Hyppo System, in addition it also contrains a pipeline generator. 
 
