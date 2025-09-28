@@ -277,7 +277,7 @@ def main():
     y = iris.data['Y_train']
 
     cs = get_tpot_configspace_classifiers_for_SMAC4AC()
-    exp_id = f"HB_{seed}_{data_id}"
+    exp_id = f"HB2_{seed}_{data_id}"
     run_id = f"hb_run_{exp_id}"
 
     # === CHANGED: bind to node IP and let OS pick a free port ===
